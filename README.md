@@ -1,38 +1,49 @@
 # Hamid Ahmadi Asl — personal academic site
 
-A static site (HTML + CSS + JS, no build step): the homepage plus a Training & Insights page. Hero uses Three.js; scroll effects use GSAP — both load from a CDN.
+A static multi-page site (HTML + CSS + JS, no build step) for GitHub Pages. The homepage has a short hero and highlight cards; each section has its own page. Hero uses Three.js; scroll effects use GSAP — both load from a CDN. A chat assistant (`js/chat.js`) is included on every page.
 
 ```
-index.html         homepage (3D hero, sections, preview of the 3 latest posts)
-insights.html      Training & Insights page: all posts + topic tabs; deep links like insights.html?topic=neural-networks
+index.html         Home — 3D hero, a short profile, and highlight cards
+education.html     Academic background
+research.html      Research and publications (papers and book)
+patents.html       Patents
+experience.html    Professional experience
+skills.html        Technical skills
+insights.html      Training & Insights: all posts + topic tabs; deep links like insights.html?topic=neural-networks
+honors.html        Honors, awards, and language proficiency
+contact.html       Email and social links
+404.html           Friendly not-found page (used by GitHub Pages)
 css/style.css
-js/main.js         shared by both pages: nav, GSAP scroll effects, wallpaper motion; loads posts + (homepage only) the hero
-js/posts.js        shared post cards, topic filters, ?topic= deep links, homepage preview
-js/hero.js         Three.js hero (procedural 3-bladed wind turbine, streamline ribbons through the rotor into a helical wake with tip vortices, breathing 3D neural network, half-res bloom)
+js/main.js         shared by every page: nav, GSAP scroll effects; loads posts and (homepage only) the hero and wallpaper motion
+js/posts.js        shared post cards, topic filters, ?topic= deep links
+js/hero.js         Three.js hero (procedural 3-bladed wind turbine, streamline ribbons, 3D neural network)
+js/wallpaper.js    canvas overlay: light pulses flowing along the streamlines (homepage)
+js/chat.js         site assistant widget (on every page)
 data/posts.json    Training & Insights posts (loaded by js/posts.js)
 files/             downloadable files for posts (PDF/PPTX…); keep files/.gitkeep
 assets/wallpaper.svg  one continuous neural-network + CFD wallpaper fixed behind the page
 assets/wallpaper-flow.json  streamline paths + vortex data used to animate the wallpaper
-js/wallpaper.js    canvas overlay: light pulses flowing along the streamlines, slowly rotating vortices
 assets/            (optional: put photo.jpg here)
 README.md
 ```
 
+Old single-page addresses such as `https://hamid-ahmadiasl.github.io/#research` automatically redirect to the new pages (for example `research.html`).
+
 ## Publish on GitHub Pages
-1. Create a **public** repository named exactly `hamid-ahmadiasl.github.io` (github.com → New).
-2. Open the repo → **Add file → Upload files**. Unzip `hamid-site.zip` and drag **the contents** (`index.html`, `insights.html`, `css/`, `js/`, `assets/`, `data/`, `files/`, `README.md`) into the page so `index.html` sits at the repo root. Commit to `main`.
+1. Create a **public** repository named exactly `hamid-ahmadiasl.github.io` (github.com → New), or open the existing one.
+2. Open the repo → **Add file → Upload files**. Unzip `hamid-site-v2.zip` and drag **the contents** (`index.html`, the other `.html` pages, `css/`, `js/`, `assets/`, `data/`, `files/`, `README.md`) into the page so `index.html` sits at the repo root. Commit to `main`.
 3. Go to **Settings → Pages**, set **Source: Deploy from a branch**, branch **main**, folder **/ (root)**, Save.
-4. Wait 1–2 minutes, then open <https://hamid-ahmadiasl.github.io>.
+4. Wait 1–2 minutes, then open <https://hamid-ahmadiasl.github.io>. Hard-refresh with Ctrl+Shift+R if an older version is cached.
 
 ## Editing later
 - **Hero tuning:** `js/hero.js` (particle counts, colours, bloom strength). Add `?noadapt` to the URL to disable the automatic quality scaling when testing.
-- **Photo:** save it as `assets/photo.jpg` and follow the comment in `index.html` (hero section) to replace the “HA” monogram.
-- **Text/links:** edit `index.html` directly in GitHub (pencil icon) and commit; the site updates in a minute or two.
+- **Photo:** save it as `assets/photo.jpg` and follow the comment in `index.html` (hero section) to replace the monogram.
+- **Text/links:** edit the relevant `.html` page directly in GitHub (pencil icon) and commit; the site updates in a minute or two.
 - **Preview locally:** run `python3 -m http.server` in this folder and open http://localhost:8000 (opening the file directly won't work because of ES modules).
 - **Custom domain:** Settings → Pages → Custom domain (e.g. a Student Pack domain).
 
 ## How to add a post (Training & Insights)
-Posts live in `data/posts.json`. Add an object to the `"posts"` list (newest dates are shown first; the 3 newest also appear on the homepage, and a new `topic` automatically gets its own tab and `insights.html?topic=<topic-slug>` link):
+Posts live in `data/posts.json`. Add an object to the `"posts"` list (newest dates are shown first, and a new `topic` automatically gets its own tab and `insights.html?topic=<topic-slug>` link):
 
 ```json
 {

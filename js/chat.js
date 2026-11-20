@@ -36,9 +36,9 @@ const I18N = {
     attachSend: 'Send file',
     attachCancel: 'Cancel',
     attachPicked: 'Selected',
-    title: 'Site assistant',
-    subtitle: 'Answers from this site · or message Hamid',
-    openChat: 'Open chat about Hamid',
+    title: "Hamid's Intelligent Assistant",
+    subtitle: 'Ask me anything, or message Hamid directly',
+    openChat: "Open Hamid's Intelligent Assistant",
     closeChat: 'Close chat',
     placeholder: 'Ask a question…',
     placeholderAsk: 'Write a message for Hamid…',
@@ -58,8 +58,8 @@ const I18N = {
     you: 'You',
     hamid: 'Hamid',
     note: 'Note',
-    assistant: 'Assistant',
-    typing: 'Assistant is typing',
+    assistant: 'AI Assistant',
+    typing: 'AI Assistant is typing',
   },
   fa: {
     greeting:
@@ -78,9 +78,9 @@ const I18N = {
     attachSend: 'ارسال فایل',
     attachCancel: 'لغو',
     attachPicked: 'انتخاب شد',
-    title: 'دستیار سایت',
-    subtitle: 'پاسخ بر اساس این سایت · یا پیام به حمید',
-    openChat: 'باز کردن گفتگو درباره حمید',
+    title: 'دستیار هوشمند حمید',
+    subtitle: 'هر سوالی دارید بپرسید یا مستقیم به حمید پیام دهید',
+    openChat: 'باز کردن دستیار هوشمند حمید',
     closeChat: 'بستن گفتگو',
     placeholder: 'سؤال خود را بنویسید…',
     placeholderAsk: 'پیامی برای حمید بنویسید…',
@@ -100,8 +100,8 @@ const I18N = {
     you: 'شما',
     hamid: 'حمید',
     note: 'یادداشت',
-    assistant: 'دستیار',
-    typing: 'دستیار در حال نوشتن است',
+    assistant: 'دستیار هوشمند',
+    typing: 'دستیار هوشمند در حال نوشتن است',
   },
   it: {
     greeting:
@@ -120,9 +120,9 @@ const I18N = {
     attachSend: 'Invia file',
     attachCancel: 'Annulla',
     attachPicked: 'Selezionato',
-    title: 'Assistente del sito',
-    subtitle: 'Risposte da questo sito · oppure scrivi a Hamid',
-    openChat: 'Apri la chat su Hamid',
+    title: 'Assistente intelligente di Hamid',
+    subtitle: 'Chiedimi qualsiasi cosa o scrivi direttamente a Hamid',
+    openChat: 'Apri Assistente intelligente di Hamid',
     closeChat: 'Chiudi la chat',
     placeholder: 'Fai una domanda…',
     placeholderAsk: 'Scrivi un messaggio per Hamid…',
@@ -142,8 +142,8 @@ const I18N = {
     you: 'Tu',
     hamid: 'Hamid',
     note: 'Nota',
-    assistant: 'Assistente',
-    typing: 'L’assistente sta scrivendo',
+    assistant: 'Assistente IA',
+    typing: 'Assistente IA sta scrivendo',
   },
 };
 
@@ -266,6 +266,8 @@ function currentPage() {
   }
 }
 
+const SPARKLE_SVG = '<svg class="chat-sparkle" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2.1 13.85 9.15 21 12 13.85 14.85 12 21.9 10.15 14.85 3 12l7.15-2.85L12 2.1Z"/><path fill="currentColor" d="M18.15 3.35 19 5.55 21.2 6.4 19 7.25 18.15 9.45 17.3 7.25 15.1 6.4 17.3 5.55 18.15 3.35Z"/><path fill="currentColor" d="M6.35 15.15 6.95 16.65 8.45 17.25 6.95 17.85 6.35 19.35 5.75 17.85 4.25 17.25 5.75 16.65 6.35 15.15Z"/></svg>';
+
 /* ---------- widget ---------- */
 
 let state = {
@@ -278,6 +280,8 @@ let state = {
   pollTimer: null,
   lastTs: 0,
   pendingFile: null,
+  flowPlaceholder: '',
+  flowOptions: null,
 };
 
 function chips() {
@@ -298,7 +302,7 @@ function build() {
   root.innerHTML = `
     <button type="button" class="chat-launch" id="chatLaunch" aria-label="${escapeHtml(T.openChat)}" aria-expanded="false" aria-controls="chatPanel">
       <span class="chat-launch__icon" aria-hidden="true">
-        <svg class="chat-launch__bubble" viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v9A2.5 2.5 0 0 1 19.5 18H8.2L3 21.2V6.5A2.5 2.5 0 0 1 4.5 4Zm.3 2A.8.8 0 0 0 4 6.8v11.2l3.3-2h12c.4 0 .7-.3.7-.8v-9a.8.8 0 0 0-.8-.8H4.8Z"/></svg>
+        ${SPARKLE_SVG}
         <svg class="chat-launch__close" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
       </span>
       <span class="chat-launch__dot" id="chatDot" hidden></span>
@@ -306,7 +310,7 @@ function build() {
     <section class="chat-panel" id="chatPanel" role="dialog" aria-labelledby="chatTitle" aria-modal="true" hidden>
       <header class="chat-panel__head">
         <div class="chat-panel__who">
-          <span class="chat-panel__avatar" aria-hidden="true">HA</span>
+          <span class="chat-panel__avatar" aria-hidden="true">${SPARKLE_SVG}</span>
           <div>
             <h2 id="chatTitle">${escapeHtml(T.title)}</h2>
             <p class="chat-panel__sub">${escapeHtml(T.subtitle)}</p>
@@ -333,6 +337,7 @@ function build() {
           <button type="button" class="chat-chip" id="chatAttachCancel">${escapeHtml(T.attachCancel)}</button>
         </div>
       </div>
+      <div class="chat-quick" id="chatQuick" hidden></div>
       <form class="chat-compose" id="chatForm">
         <label class="visually-hidden" for="chatInput">${escapeHtml(T.yourMessage)}</label>
         <button type="button" class="chat-attach" id="chatAttach" title="${escapeHtml(T.attachTitle)}" aria-label="${escapeHtml(T.attachTitle)}">${escapeHtml(T.attach)}</button>
@@ -541,7 +546,8 @@ function toggle(force) {
 function syncComposer() {
   const input = $('#chatInput');
   if (input) {
-    input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
+    if (state.meetingMode && state.flowPlaceholder) input.placeholder = state.flowPlaceholder;
+    else input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
     input.focus();
   }
   const chipsEl = $('#chatChips');
@@ -549,10 +555,59 @@ function syncComposer() {
   chipsEl?.classList.toggle('is-meeting', state.meetingMode);
   const meta = $('#chatAskMeta');
   if (meta) meta.hidden = !state.askMode;
+  const hasQuick = Array.isArray(state.flowOptions) && state.flowOptions.length > 0;
   const skip = $('#chatMeetingSkip');
   const cancel = $('#chatMeetingCancel');
-  if (skip) skip.hidden = !state.meetingMode;
-  if (cancel) cancel.hidden = !state.meetingMode;
+  if (skip) skip.hidden = !state.meetingMode || hasQuick;
+  if (cancel) cancel.hidden = !state.meetingMode || hasQuick;
+}
+
+function applyFlowUi(data) {
+  if (!data) return;
+  const source = data.message?.source || '';
+  const ended = source === 'meeting-submitted' || source === 'meeting-cancel';
+  const hasOptions = Array.isArray(data.options);
+  const hasPlaceholder = typeof data.placeholder === 'string';
+  if (!hasOptions && !hasPlaceholder && !ended) return;
+  if (ended || (hasOptions && data.options.length === 0 && hasPlaceholder && data.placeholder === '')) {
+    state.flowOptions = null;
+    state.flowPlaceholder = '';
+    renderQuickReplies();
+    if (state.meetingMode) enterMeetingMode(false);
+    else syncComposer();
+    return;
+  }
+  if (hasOptions) state.flowOptions = data.options;
+  if (hasPlaceholder) state.flowPlaceholder = data.placeholder;
+  if ((state.flowOptions && state.flowOptions.length) || state.flowPlaceholder) {
+    if (!state.meetingMode) enterMeetingMode(true);
+    else {
+      renderQuickReplies();
+      syncComposer();
+    }
+  } else {
+    renderQuickReplies();
+    syncComposer();
+  }
+}
+
+function renderQuickReplies() {
+  const el = $('#chatQuick');
+  if (!el) return;
+  const opts = state.flowOptions || [];
+  el.replaceChildren();
+  el.hidden = opts.length === 0;
+  opts.forEach((opt) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chat-chip chat-chip--quick';
+    btn.textContent = opt.label || opt.value;
+    btn.addEventListener('click', () => {
+      const value = opt.value || opt.label || '';
+      sendMeeting(value, value);
+    });
+    el.appendChild(btn);
+  });
 }
 
 function leaveModesForChat() {
@@ -580,7 +635,12 @@ function enterAskMode(on = true) {
 function enterMeetingMode(on = true) {
   state.meetingMode = on;
   if (on) state.askMode = false;
+  else {
+    state.flowOptions = null;
+    state.flowPlaceholder = '';
+  }
   ensureMeetingActions();
+  renderQuickReplies();
   syncComposer();
 }
 
@@ -709,6 +769,7 @@ async function sendChat(text) {
     else if (data.reply) {
       appendMsg({ id: uuid(), role: 'assistant', text: data.reply, ts: Date.now(), source: 'ai' });
     }
+    applyFlowUi(data);
     if (data.suggestHandoff) offerHandoff();
   } catch (err) {
     showTyping(false);
@@ -820,9 +881,10 @@ async function sendMeeting(text, action, opts = {}) {
     }
     const source = data.message?.source || '';
     if (source === 'meeting-submitted' || source === 'meeting-cancel') {
-      enterMeetingMode(false);
+      applyFlowUi({ ...data, options: data.options || [], placeholder: data.placeholder || '' });
     } else {
       enterMeetingMode(true);
+      applyFlowUi(data);
     }
   } catch (err) {
     showTyping(false);
