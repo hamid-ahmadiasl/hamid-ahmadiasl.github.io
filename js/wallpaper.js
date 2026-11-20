@@ -5,7 +5,7 @@
 export async function initWallpaper({ reduceMotion = false } = {}) {
   const host = document.querySelector('.wallpaper');
   if (!host) return;
-  const res = await fetch('assets/wallpaper-flow.json?v=9');
+  const res = await fetch('assets/wallpaper-flow.json?v=11');
   if (!res.ok) throw new Error('wallpaper-flow ' + res.status);
   const data = await res.json();
   const canvas = document.createElement('canvas');

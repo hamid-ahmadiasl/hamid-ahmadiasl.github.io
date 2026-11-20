@@ -241,3 +241,5 @@ ul,ol{margin:0;padding:0;list-style:none}
 .section--posts{padding-top:1rem}
 .posts__more{display:flex;justify-content:center;margin-top:2rem}
 a.post__topic{text-decoration:none}a.post__topic:hover{filter:brightness(1.25)}
+
+.nav__brand{display:inline-flex;align-items:center}.nav__logo{display:block;width:38px;height:auto;margin:-2px;transition:filter .3s,transform .3s}.nav__brand:hover .nav__logo{filter:drop-shadow(0 0 8px rgba(42,182,237,.55)) drop-shadow(0 0 14px rgba(123,92,255,.4));transform:scale(1.04)}.monogram img{display:block;width:54px;height:auto}
