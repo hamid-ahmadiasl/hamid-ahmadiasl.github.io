@@ -56,16 +56,16 @@ if (document.readyState === 'complete') initAnimations();
 /* ---------- Training & Insights (shared module js/posts.js) ---------- */
 {
   const full = $('#posts'), preview = $('#postsPreview');
-  if (full || preview) import('./posts.js?v=8').then(m => full ? m.initPostsPage(full, $('#postFilters'), { reduceMotion }) : m.initPostsPreview(preview, { limit: 3 }))
+  if (full || preview) import('./posts.js?v=9').then(m => full ? m.initPostsPage(full, $('#postFilters'), { reduceMotion }) : m.initPostsPreview(preview, { limit: 3 }))
     .catch(e => console.warn('posts unavailable:', e && e.message));
 }
 
 /* ---------- Wallpaper motion (flowing streamlines + rotating swirls, see js/wallpaper.js) ---------- */
-import('./wallpaper.js?v=8')
+import('./wallpaper.js?v=9')
   .then(m => m.initWallpaper({ reduceMotion: false }))
   .catch(e => console.warn('wallpaper motion disabled:', e && e.message));
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
-if ($('#scene')) import('./hero.js?v=8')
+if ($('#scene')) import('./hero.js?v=9')
   .then(m => m.initHero({ reduceMotion: false, isSmall }))
   .catch(e => { console.warn('3D hero disabled:', e && e.message); document.documentElement.classList.add('no-webgl'); });
