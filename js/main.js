@@ -113,6 +113,6 @@ async function initPosts() {
 initPosts();
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
-import('./hero.js')
+import('./hero.js?v=3')
   .then(m => m.initHero({ reduceMotion, isSmall }))
   .catch(e => { console.warn('3D hero disabled:', e && e.message); document.documentElement.classList.add('no-webgl'); });
