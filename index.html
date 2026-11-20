@@ -24,17 +24,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=7">
 
   <!-- Three.js via ES module import map (used in js/main.js) -->
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
     }
   }
   </script>
+  <!-- start fetching three.js + the post-processing addons in parallel with the page -->
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/LineSegments2.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/LineMaterial.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/Pass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/MaskPass.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/CopyShader.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/LuminosityHighPassShader.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/OutputShader.js" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/LineSegmentsGeometry.js" crossorigin>
 </head>
 <body>
   <!-- One continuous NN + CFD wallpaper (assets/wallpaper.svg), fixed behind all content below the hero -->
@@ -51,7 +66,7 @@
       <a href="#patents">Patents</a>
       <a href="#experience">Experience</a>
       <a href="#skills">Skills</a>
-      <a href="#insights">Insights</a>
+      <a href="insights.html">Insights</a>
       <a href="#honors">Honors</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -381,17 +396,17 @@
       </div>
     </section>
 
-    <!-- TRAINING & INSIGHTS (cards are generated from data/posts.json by js/main.js) -->
+    <!-- TRAINING & INSIGHTS preview (3 latest from data/posts.json via js/posts.js; full list on insights.html) -->
     <section class="section" id="insights">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">07 — Training &amp; Insights</p>
-          <h2>Visual guides &amp; posts</h2>
+          <h2>Latest visual guides</h2>
           <p class="section__sub">Short visual explainers on AI, machine learning and AI for engineering, shared on <a class="link" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a></p>
         </header>
-        <div class="filters reveal" id="postFilters" role="tablist" aria-label="Filter posts by topic"></div>
-        <div class="posts" id="posts" aria-live="polite"></div>
-        <noscript><p class="muted">Enable JavaScript to see the posts, or visit the LinkedIn profile.</p></noscript>
+        <div class="posts" id="postsPreview" aria-live="polite"></div>
+        <div class="posts__more reveal"><a class="btn btn--primary" href="insights.html">View all insights <span aria-hidden="true">→</span></a></div>
+        <noscript><p class="muted">Enable JavaScript to see the posts, or open <a class="link" href="insights.html">all insights</a>.</p></noscript>
       </div>
     </section>
 
@@ -472,7 +487,7 @@
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <link rel="modulepreload" href="js/hero.js?v=4">
-  <script type="module" src="js/main.js?v=4"></script>
+  <link rel="modulepreload" href="js/hero.js?v=7">
+  <script type="module" src="js/main.js?v=7"></script>
 </body>
 </html>

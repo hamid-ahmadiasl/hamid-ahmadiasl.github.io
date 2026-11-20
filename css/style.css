@@ -41,7 +41,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 
 /* HERO */
 .hero{position:relative;min-height:100svh;display:grid;align-items:center;overflow:hidden;isolation:isolate}
-.hero__canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block}
+.hero{background:radial-gradient(55% 60% at 80% 45%,rgba(123,92,255,.16),transparent 70%),radial-gradient(60% 55% at 55% 40%,rgba(42,182,237,.14),transparent 70%),var(--bg)}
+.hero__canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block;opacity:0;transition:opacity .9s ease}
+.hero__canvas.is-ready{opacity:1}
+@media (prefers-reduced-motion:reduce){.hero__canvas{transition:none}}
 .hero__glow{position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 75% at 22% 52%,rgba(1,4,12,.86) 0%,rgba(1,4,12,.62) 45%,rgba(1,4,12,0) 80%),linear-gradient(180deg,rgba(1,4,12,0) 78%,var(--bg) 100%)}
 .no-webgl .hero{background:radial-gradient(700px 500px at 75% 40%,rgba(42,182,237,.18),transparent 65%),radial-gradient(600px 400px at 90% 80%,rgba(123,92,255,.12),transparent 65%),var(--bg)}
 .no-webgl .hero__canvas{display:none}
@@ -164,9 +167,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 
 /* Wallpaper: ONE continuous neural-network + CFD texture fixed behind the page (assets/wallpaper.svg).
    The hero's opaque canvas covers it at the top; content scrolls over it below. */
-.wallpaper{position:fixed;inset:-3%;z-index:-1;pointer-events:none;background:url("../assets/wallpaper.svg?v=4") center/cover no-repeat;opacity:var(--wall-o,.42);
+.wallpaper{position:fixed;inset:-3%;z-index:-1;pointer-events:none;background:url("../assets/wallpaper.svg?v=5") center/cover no-repeat;opacity:var(--wall-o,.42);
   animation:wallDrift 90s ease-in-out infinite alternate;will-change:transform}
 .wallpaper::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 90% at 50% 50%,rgba(1,4,12,.22),rgba(1,4,12,0) 75%)}
+.wallpaper__flow{position:absolute;inset:0;width:100%;height:100%;display:block}
 @keyframes wallDrift{from{transform:translate3d(-1.2%,-.8%,0) scale(1.02)}to{transform:translate3d(1.2%,.8%,0) scale(1.05)}}
 @media (max-width:760px){.wallpaper{background-size:auto 100%;--wall-o:.4}}
 @media (prefers-reduced-motion:reduce){.wallpaper{animation:none}}
@@ -226,3 +230,14 @@ ul,ol{margin:0;padding:0;list-style:none}
 .posts__empty{grid-column:1/-1;text-align:center;padding:2.2rem 1rem}
 @media (max-width:900px){.posts{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:760px){.posts{grid-template-columns:1fr}.journey__path li:not(:last-child)::after{width:1.2rem;margin:0 .45rem}.hero__legend{display:none}}
+
+/* ---------- Sub-pages (insights.html): compact page header instead of the 3D hero ---------- */
+.page-head{position:relative;padding:clamp(7rem,14vw,9.5rem) 0 clamp(1.5rem,4vw,2.5rem);isolation:isolate}
+.page-head::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(50% 80% at 85% 0%,rgba(123,92,255,.18),transparent 70%),radial-gradient(45% 70% at 15% 0%,rgba(42,182,237,.14),transparent 70%),linear-gradient(to bottom,rgba(1,4,12,.85),rgba(1,4,12,0))}
+.page-head h1{font-family:var(--display);font-size:clamp(2.2rem,5.5vw,3.6rem);line-height:1.08;letter-spacing:-.02em;margin:0 0 1rem}
+.page-head .section__sub{max-width:62ch}
+.crumbs{font-size:.85rem;color:var(--muted);margin:0 0 1.1rem}
+.crumbs a{color:var(--muted);text-decoration:none}.crumbs a:hover{color:var(--cyan)}
+.section--posts{padding-top:1rem}
+.posts__more{display:flex;justify-content:center;margin-top:2rem}
+a.post__topic{text-decoration:none}a.post__topic:hover{filter:brightness(1.25)}
