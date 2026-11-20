@@ -6,7 +6,7 @@
   <title>Hamid Ahmadi Asl · Mechanical Engineer &amp; AI / Computational Science Researcher</title>
   <meta name="description" content="Hamid Ahmadi Asl — Mechanical Engineer and AI &amp; Computational Science researcher. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. CFD, wind turbines, machine learning, patents and publications.">
   <meta name="author" content="Hamid Ahmadi Asl">
-  <meta name="theme-color" content="#060a14">
+  <meta name="theme-color" content="#01040c">
   <link rel="canonical" href="https://hamid-ahmadiasl.github.io/">
 
   <!-- Open Graph / social -->
@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="Mechanical Engineer · AI &amp; Computational Science Researcher">
 
   <!-- Favicon (inline SVG) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%232dd4bf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%23060a14'/%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ctext x='32' y='41' font-family='Arial,sans-serif' font-size='26' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EHA%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232ab6ed'/%3E%3Cstop offset='1' stop-color='%237b5cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%2301040c'/%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ctext x='32' y='41' font-family='Arial,sans-serif' font-size='26' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EHA%3C/text%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +30,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
     }
   }
   </script>
@@ -48,6 +49,7 @@
       <a href="#patents">Patents</a>
       <a href="#experience">Experience</a>
       <a href="#skills">Skills</a>
+      <a href="#insights">Insights</a>
       <a href="#honors">Honors</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -62,10 +64,10 @@
            <div class="monogram"> below with:
            <img class="monogram monogram--photo" src="assets/photo.jpg" alt="Portrait of Hamid Ahmadi Asl" width="112" height="112"> -->
       <div class="monogram hero-anim" aria-hidden="true"><span>HA</span></div>
-      <p class="eyebrow hero-anim">Hello, I’m</p>
+      <p class="eyebrow hero-anim">Engineering <span class="eyebrow__accent">meets</span> AI</p>
       <h1 class="hero__name hero-anim">Hamid <span class="grad">Ahmadi Asl</span></h1>
       <p class="hero__title hero-anim">Mechanical Engineer <span class="dot">·</span> AI &amp; Computational Science Researcher</p>
-      <p class="hero__lead hero-anim">MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca, applying AI and computational methods to engineering systems.</p>
+      <p class="hero__lead hero-anim">Bridging engineering knowledge and artificial intelligence to develop practical solutions for complex real-world problems. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca.</p>
       <div class="hero__cta hero-anim">
         <a class="btn btn--primary" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3Zm-6 9.2v4.3C6 18.4 8.7 20 12 20s6-1.6 6-3.5v-4.3l-6 3.3-6-3.3Z"/></svg>
@@ -85,13 +87,15 @@
         </a>
       </div>
     </div>
+    <div class="hero__legend" aria-hidden="true"><span>Velocity magnitude</span><i></i></div>
     <a class="hero__scroll" href="#about" aria-label="Scroll to About"><span></span></a>
   </section>
 
   <main id="main">
 
-    <!-- ABOUT -->
+    <!-- ABOUT (each section below also carries a faint hand-built SVG line-art "wallpaper" illustration: img.wp) -->
     <section class="section" id="about">
+      <img class="wp wp--about" data-speed="0.5" src="assets/bg/neural-net.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="860" height="600">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">01 — About</p>
@@ -110,11 +114,19 @@
             <li class="card"><span class="stat" data-count="1">0</span><span class="stat__label">Published book</span></li>
           </ul>
         </div>
+        <div class="journey reveal">
+          <h3 class="subhead">My journey</h3>
+          <ol class="journey__path" aria-label="From mechanical engineering to scientific machine learning">
+            <li>Mechanical Engineering</li><li>Fluid Mechanics</li><li>Numerical Simulation (CFD)</li><li>Experimental Research</li><li>Industrial R&amp;D</li><li>Artificial Intelligence</li><li>Scientific Machine Learning</li>
+          </ol>
+          <p class="muted journey__note">Each step has expanded my technical toolkit. My focus is turning engineering problems into practical, data-driven solutions.</p>
+        </div>
       </div>
     </section>
 
     <!-- EDUCATION -->
     <section class="section" id="education">
+      <img class="wp wp--edu" data-speed="-0.4" src="assets/bg/equations.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="980" height="720">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">02 — Education</p>
@@ -134,7 +146,13 @@
             <div class="card">
               <h3>Master of Science in Mechanical Engineering — Energy Conversion</h3>
               <p class="muted">Department of Mechanical Engineering, South Tehran Branch, IAU, Tehran, Iran.</p>
-              <a class="link" href="https://drive.google.com/file/d/1IffsVkNdrP3oeBr2TSejqB2YB0RwIoEG/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+              <p class="mini-head">Research highlights</p>
+              <ul class="ticks">
+                <li>Built full-scale experimental systems</li>
+                <li>Validated CFD models experimentally</li>
+                <li>Combined numerical and experimental methods</li>
+              </ul>
+              <p class="muted small">This work strengthened my ability to connect physical understanding, simulation and experimental evidence.</p>
             </div>
           </li>
           <li class="timeline__item reveal">
@@ -142,7 +160,6 @@
             <div class="card">
               <h3>Bachelor of Science in Mechanical Engineering — Heat and Fluids</h3>
               <p class="muted">Department of Mechanical Engineering, South Tehran Branch, IAU, Tehran, Iran.</p>
-              <a class="link" href="https://drive.google.com/file/d/1gzXEG5Fx3uSOBaFm47cm6jGSWsxyRyV9/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
             </div>
           </li>
         </ol>
@@ -151,6 +168,9 @@
 
     <!-- RESEARCH -->
     <section class="section" id="research">
+      <img class="wp wp--res-a" data-speed="0.5" src="assets/bg/mesh-airfoil.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1000" height="620">
+      <img class="wp wp--res-b" data-speed="-0.5" src="assets/bg/savonius.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="700" height="700">
+      <img class="wp wp--res-c" data-speed="0.4" src="assets/bg/rsm.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="760" height="640">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">03 — Research &amp; Publications</p>
@@ -223,6 +243,7 @@
 
     <!-- PATENTS -->
     <section class="section" id="patents">
+      <img class="wp wp--pat" data-speed="0.3" src="assets/bg/wind-tunnel.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1280" height="440">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">04 — Patents</p>
@@ -247,6 +268,7 @@
 
     <!-- EXPERIENCE -->
     <section class="section" id="experience">
+      <img class="wp wp--exp" data-speed="-0.4" src="assets/bg/vessel.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1100" height="760">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">05 — Experience</p>
@@ -266,7 +288,7 @@
             <div class="card">
               <h3>Project Sub-Leader (PSL)</h3>
               <p class="company">Sazeh Consultants <span class="tag">Industry</span></p>
-              <p class="muted">Vendor communication; engineering problem-solving; meeting leadership and reporting.</p>
+              <p class="muted">Coordinated engineers and resolved interdisciplinary engineering issues; allocated tasks, led meetings and prepared progress reports.</p>
             </div>
           </li>
           <li class="timeline__item reveal">
@@ -274,7 +296,7 @@
             <div class="card">
               <h3>Design Engineer</h3>
               <p class="company">Sazeh Consultants <span class="tag">Industry</span></p>
-              <p class="muted">Mechanical design of static equipment; preparing MR; Vendor Document Review (VDR).</p>
+              <p class="muted">Designed stationary equipment; prepared Material Requisitions (MRs); performed Vendor Document Review (VDR).</p>
             </div>
           </li>
           <li class="timeline__item reveal">
@@ -282,15 +304,15 @@
             <div class="card">
               <h3>Modeling and Simulation</h3>
               <p class="company">Freelance <span class="tag">R&amp;D and Industry</span></p>
-              <p class="muted">Numerical simulation and modeling across multiple projects.</p>
+              <p class="muted">Delivered numerical simulation and modeling across R&amp;D and industrial projects.</p>
             </div>
           </li>
           <li class="timeline__item reveal">
             <span class="timeline__years">2019 – 2020</span>
             <div class="card">
-              <h3>Simulation &amp; Optimization</h3>
+              <h3>Simulation &amp; Optimization Specialist</h3>
               <p class="company">Dehkdeh Nik Modern <span class="tag">R&amp;D and Industry</span></p>
-              <p class="muted">Numerical simulation and modeling; innovative design development.</p>
+              <p class="muted">Performed numerical simulation and modeling; developed design concepts; coordinated project team members.</p>
             </div>
           </li>
           <li class="timeline__item reveal">
@@ -298,7 +320,7 @@
             <div class="card">
               <h3>Modeling and Simulation</h3>
               <p class="company">Freelance <span class="tag">R&amp;D</span></p>
-              <p class="muted">Project-based numerical simulation and modeling.</p>
+              <p class="muted">Carried out project-based numerical simulation and modeling for R&amp;D work.</p>
             </div>
           </li>
           <li class="timeline__item reveal">
@@ -306,7 +328,7 @@
             <div class="card">
               <h3>Mechanical Engineer</h3>
               <p class="company">Fidar Gostaran Apadana <span class="tag">R&amp;D</span></p>
-              <p class="muted">Mechanical calculation, simulation &amp; design evaluation; interface with R&amp;D partners.</p>
+              <p class="muted">Performed mechanical calculations, numerical simulation and design evaluation; liaised with R&amp;D partners.</p>
             </div>
           </li>
         </ol>
@@ -315,6 +337,7 @@
 
     <!-- SKILLS -->
     <section class="section" id="skills">
+      <img class="wp wp--skill" data-speed="0.4" src="assets/bg/hpc.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1010" height="680">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">06 — Skills</p>
@@ -346,14 +369,45 @@
             <ul class="chips"><li>Mechanical Design</li><li>Stationary Equipment</li><li>Vendor Document Review (VDR)</li><li>Material Requisition (MR)</li></ul>
           </article>
         </div>
+        <div class="grid grid--3 skills-extra">
+          <article class="card card--hover reveal">
+            <h3>Core competencies</h3>
+            <ul class="chips"><li>Mechanical &amp; Engineering Design</li><li>Numerical Simulation and CFD</li><li>Design Optimization</li><li>Interdisciplinary Collaboration</li><li>Project Coordination &amp; Problem Solving</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Current AI coursework</h3>
+            <ul class="chips chips--violet"><li>Neural Networks</li><li>Internet of Things (IoT)</li><li>Signal &amp; Image Processing</li><li>Computer Vision for Industry</li><li>Intelligent Consumer Technologies</li><li>Text Mining and Search</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Areas I’m exploring</h3>
+            <ul class="chips chips--pink"><li>Generative AI &amp; LLMs</li><li>IoT &amp; Intelligent Monitoring</li><li>BIM &amp; Digital Twins</li><li>Causal AI &amp; Decision Support</li></ul>
+            <p class="flowline" aria-label="Physics, then Engineering, then AI, leading to Intelligent Engineering Systems"><span>Physics</span><span>Engineering</span><span>AI</span><span>Intelligent Engineering Systems</span></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRAINING & INSIGHTS (cards are generated from data/posts.json by js/main.js) -->
+    <section class="section" id="insights">
+      <img class="wp wp--ins" data-speed="0.35" src="assets/bg/neural-net.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="860" height="600">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">07 — Training &amp; Insights</p>
+          <h2>Visual guides &amp; posts</h2>
+          <p class="section__sub">Short visual explainers on AI, machine learning and AI for engineering, shared on <a class="link" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a></p>
+        </header>
+        <div class="filters reveal" id="postFilters" role="tablist" aria-label="Filter posts by topic"></div>
+        <div class="posts" id="posts" aria-live="polite"></div>
+        <noscript><p class="muted">Enable JavaScript to see the posts, or visit the LinkedIn profile.</p></noscript>
       </div>
     </section>
 
     <!-- HONORS -->
     <section class="section" id="honors">
+      <img class="wp wp--honor" data-speed="-0.4" src="assets/bg/ducted-turbine.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="980" height="620">
       <div class="wrap">
         <header class="section__head reveal">
-          <p class="eyebrow">07 — Honors &amp; Awards</p>
+          <p class="eyebrow">08 — Honors &amp; Awards</p>
           <h2>Recognition</h2>
         </header>
         <ul class="honors">
@@ -400,10 +454,12 @@
 
     <!-- CONTACT -->
     <section class="section section--contact" id="contact">
+      <img class="wp wp--contact" data-speed="0.3" src="assets/bg/cylinder-wake.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1000" height="460">
       <div class="wrap">
         <div class="contact card reveal">
-          <p class="eyebrow">08 — Contact</p>
+          <p class="eyebrow">09 — Contact</p>
           <h2>Let’s connect</h2>
+          <blockquote class="quote">“What excites me most is working on research where physics, engineering and artificial intelligence come together.”</blockquote>
           <p class="muted">Interested in research across science and engineering — feel free to get in touch.</p>
           <a class="contact__mail" href="mailto:hmd.ahmadiasl@gmail.com">hmd.ahmadiasl@gmail.com</a>
           <div class="hero__cta">
@@ -425,6 +481,7 @@
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <link rel="modulepreload" href="js/hero.js">
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

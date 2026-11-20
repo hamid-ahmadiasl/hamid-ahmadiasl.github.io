@@ -1,0 +1,108 @@
+{
+  "posts": [
+    {
+      "title": "Self-Organizing Maps (SOMs)",
+      "topic": "Neural Networks",
+      "description": "A visual guide to how Self-Organizing Maps organize high-dimensional data into a 2D map without labels: neuron competition, the Best Matching Unit (BMU), neighborhood learning and topology preservation.",
+      "date": "2026-10-17",
+      "url": "https://lnkd.in/p/eXBsBngH",
+      "file": ""
+    },
+    {
+      "title": "Regression vs. Classification: what are we trying to predict?",
+      "topic": "ML Fundamentals",
+      "description": "If the target is a continuous value, use regression; if it is a category or class, use classification. Regression → How much? Classification → Which one?",
+      "date": "2026-10-06",
+      "url": "https://lnkd.in/p/ejfn8Gfa",
+      "file": ""
+    },
+    {
+      "title": "Why are small engineering datasets different?",
+      "topic": "AI × CFD",
+      "description": "Engineering data is expensive and hard to scale. A small engineering dataset brings limited coverage, higher uncertainty, noise and a greater risk of overfitting, so engineering ML needs careful data collection, domain knowledge, uncertainty assessment and proper validation.",
+      "date": "2026-09-16",
+      "url": "https://lnkd.in/p/euQSxhbE",
+      "file": ""
+    },
+    {
+      "title": "Is AI in engineering here to replace physics?",
+      "topic": "AI Perspectives",
+      "description": "AI and machine learning can accelerate calculations, discover patterns and support better decisions, but physics remains the foundation of accurate, trustworthy engineering models. Physics + AI → Better Engineering.",
+      "date": "2026-09-11",
+      "url": "https://lnkd.in/p/e6vJMvsK",
+      "file": ""
+    },
+    {
+      "title": "Recurrent Neural Networks (RNNs)",
+      "topic": "Neural Networks",
+      "description": "How does a neural network remember the past? A visual guide to how RNNs carry information through time with a hidden state: sequential data, recurrent connections, BPTT, vanishing gradients and the motivation behind LSTM and GRU.",
+      "date": "2026-09-08",
+      "url": "https://lnkd.in/p/eq_uGN3u",
+      "file": ""
+    },
+    {
+      "title": "What does a Machine Learning model actually see?",
+      "topic": "ML Fundamentals",
+      "description": "A model doesn’t see the real world, it sees a representation of it: Real World → Data → Features → Model → Prediction. Understanding this pipeline is a first step toward understanding how ML works.",
+      "date": "2026-09-05",
+      "url": "https://lnkd.in/p/eACwjrwv",
+      "file": ""
+    },
+    {
+      "title": "AI Foundations 02 | Data, Features, Labels & Samples",
+      "topic": "AI Foundations",
+      "description": "The building blocks of machine learning: how real-world observations become model inputs as data, samples, features and labels, and why data quality matters more than simply having more data.",
+      "date": "2026-09-03",
+      "url": "https://lnkd.in/p/ejMC-NXG",
+      "file": ""
+    },
+    {
+      "title": "AI × Engineering 01: CFD Surrogate Models",
+      "topic": "AI × CFD",
+      "description": "A deeper look at AI × CFD: where machine-learning surrogate models can add value and, more importantly, when we can trust their predictions.",
+      "date": "2026-08-28",
+      "url": "https://lnkd.in/p/e_XAAZ8m",
+      "file": ""
+    },
+    {
+      "title": "Can AI replace CFD in engineering?",
+      "topic": "AI × CFD",
+      "description": "CFD and AI are not competitors: they can work together to build faster, more efficient engineering workflows.",
+      "date": "2026-08-25",
+      "url": "https://lnkd.in/p/eFP4gtah",
+      "file": ""
+    },
+    {
+      "title": "Will AI replace humans? Or transform the way we work?",
+      "topic": "AI Perspectives",
+      "description": "The future may not be Humans vs. AI, but Humans + AI. The real advantage will be learning how to work with AI.",
+      "date": "2026-08-23",
+      "url": "https://lnkd.in/p/eA-Updrj",
+      "file": ""
+    },
+    {
+      "title": "Multi-Layer Perceptron (MLP)",
+      "topic": "Neural Networks",
+      "description": "How does an MLP actually learn? A visual guide that organizes the core concepts behind the learning process of a multi-layer perceptron.",
+      "date": "2026-08-20",
+      "url": "https://lnkd.in/p/e7RdSSzN",
+      "file": ""
+    },
+    {
+      "title": "How does a machine actually learn?",
+      "topic": "ML Fundamentals",
+      "description": "At its core, machine learning is an iterative loop: Data → Model → Prediction → Loss → Update → Better Model. The model predicts, measures the error, adjusts its parameters and repeats.",
+      "date": "2026-08-19",
+      "url": "https://lnkd.in/p/ey35FAbr",
+      "file": ""
+    },
+    {
+      "title": "AI Foundations 01 | Understanding Artificial Intelligence",
+      "topic": "AI Foundations",
+      "description": "What do we actually mean by Artificial Intelligence? A simple journey from intelligent behavior and rule-based systems to machine learning, deep learning, learning from data, generalization and reliability.",
+      "date": "2026-08-17",
+      "url": "https://lnkd.in/p/e-d7aEfw",
+      "file": ""
+    }
+  ]
+}

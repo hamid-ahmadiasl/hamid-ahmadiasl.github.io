@@ -1,6 +1,5 @@
 /* Hamid Ahmadi Asl — personal site
-   Three.js hero scene (turbine + gear + neural-network field), GSAP scroll reveals. */
-import * as THREE from 'three';
+   Hero scene is in js/hero.js (Three.js), GSAP scroll reveals. */
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isSmall = window.matchMedia('(max-width: 760px)').matches;
@@ -32,6 +31,14 @@ function initAnimations() {
   const gsap = window.gsap, ScrollTrigger = window.ScrollTrigger;
   if (!gsap || !ScrollTrigger || reduceMotion) { $$('.stat').forEach(s => s.textContent = s.dataset.count); return; }
   gsap.registerPlugin(ScrollTrigger);
+  gsap.ticker.lagSmoothing(0);   // keep intro timing honest even if the first frames are slow (heavy WebGL start-up)
+
+  // gentle scroll parallax on the wallpaper illustrations
+  $$('.wp').forEach(el => {
+    const sp = parseFloat(el.dataset.speed || '0.4');
+    gsap.fromTo(el, { y: -sp * 90 }, { y: sp * 90, ease: 'none',
+      scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
+  });
 
   gsap.from('.hero-anim', { opacity: 0, y: 28, duration: .9, ease: 'power3.out', stagger: .12, delay: .15 });
 
@@ -52,156 +59,60 @@ function initAnimations() {
 window.addEventListener('load', initAnimations);
 if (document.readyState === 'complete') initAnimations();
 
-/* ---------- Three.js hero ---------- */
-function webglAvailable() {
+/* ---------- Training & Insights (data/posts.json) ---------- */
+// Each post: { title, topic, description, date (YYYY-MM-DD, optional), url (LinkedIn link, optional), file (e.g. "files/guide.pdf", optional) }
+const TOPIC_ORDER = ['AI Foundations', 'ML Fundamentals', 'Neural Networks', 'AI × CFD', 'AI Perspectives', 'CFD', 'Machine Learning', 'HPC', 'Python', 'Engineering Design'];
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = d => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? '' : x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+async function initPosts() {
+  const grid = $('#posts'), bar = $('#postFilters');
+  if (!grid) return;
+  const empty = (msg) => `<div class="card posts__empty"><p class="muted">${msg}</p><a class="btn" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">See my posts on LinkedIn ↗</a></div>`;
+  let posts = [];
   try {
-    const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
-  } catch (e) { return false; }
-}
-
-function initScene() {
-  const canvas = $('#scene');
-  if (!webglAvailable()) { document.documentElement.classList.add('no-webgl'); return; }
-
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: !isSmall, alpha: true, powerPreference: 'low-power' });
-  } catch (e) { document.documentElement.classList.add('no-webgl'); return; }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSmall ? 1.5 : 2));
-  renderer.setClearColor(0x000000, 0);
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-  camera.position.set(0, 0, 11);
-
-  const cyan = new THREE.Color(0x22d3ee), teal = new THREE.Color(0x2dd4bf);
-  const lineMat = (c, o) => new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o });
-
-  const root = new THREE.Group();          // follows mouse
-  scene.add(root);
-  const rig = new THREE.Group();           // placement (right side on desktop)
-  root.add(rig);
-
-  /* Turbine: hub + 3 twisted blades, inside a duct ring (nod to ducted wind-turbine research) */
-  const turbine = new THREE.Group();
-  const hub = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.CylinderGeometry(.35, .35, .5, 18).rotateX(Math.PI / 2)), lineMat(cyan, .9));
-  turbine.add(hub);
-  const bladeCount = 3;
-  for (let i = 0; i < bladeCount; i++) {
-    const g = new THREE.BoxGeometry(.55, 2.5, .05, 3, 14, 1);
-    const p = g.attributes.position;
-    for (let k = 0; k < p.count; k++) {            // twist along the span
-      const y = p.getY(k), x = p.getX(k), a = (y / 2.5) * 0.9;
-      p.setX(k, x * Math.cos(a) - 0 * Math.sin(a));
-      p.setZ(k, p.getZ(k) + x * Math.sin(a) * .9);
-      p.setX(k, x * (1 - .35 * (y / 2.5 + .5)));   // taper
-    }
-    g.translate(0, 1.55, 0);
-    const blade = new THREE.LineSegments(new THREE.WireframeGeometry(g), lineMat(i % 2 ? teal : cyan, .55));
-    blade.rotation.z = (i / bladeCount) * Math.PI * 2;
-    turbine.add(blade);
-  }
-  rig.add(turbine);
-  const duct = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.TorusGeometry(3.3, .09, 8, 72)), lineMat(teal, .45));
-  rig.add(duct);
-
-  /* Gear: extruded toothed profile, edges only */
-  function makeGear(teeth, rOuter, rRoot, hole) {
-    const s = new THREE.Shape(), n = teeth * 4;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2, r = (i % 4 === 1 || i % 4 === 2) ? rOuter : rRoot;
-      const x = Math.cos(a) * r, y = Math.sin(a) * r;
-      i ? s.lineTo(x, y) : s.moveTo(x, y);
-    }
-    s.closePath();
-    const h = new THREE.Path(); h.absarc(0, 0, hole, 0, Math.PI * 2, true); s.holes.push(h);
-    const geo = new THREE.ExtrudeGeometry(s, { depth: .3, bevelEnabled: false });
-    geo.translate(0, 0, -.15);
-    return new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), lineMat(cyan, .5));
-  }
-  const gearA = makeGear(24, 4.75, 4.25, 3.9); gearA.position.z = -.6;
-  rig.add(gearA);
-  const gearB = makeGear(10, 1.55, 1.2, .5); gearB.position.set(4.9, -3.2, -.6);
-  rig.add(gearB);
-
-  /* Neural-network field: nodes + proximity edges */
-  const nodeCount = isSmall ? 70 : 160;
-  const pts = [];
-  for (let i = 0; i < nodeCount; i++) {
-    const r = 5 + Math.random() * 7, th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
-    pts.push(new THREE.Vector3(r * Math.sin(ph) * Math.cos(th) * 1.25, r * Math.sin(ph) * Math.sin(th) * .8, r * Math.cos(ph) * .6 - 3));
-  }
-  const nodeGeo = new THREE.BufferGeometry().setFromPoints(pts);
-  const nodes = new THREE.Points(nodeGeo, new THREE.PointsMaterial({ color: 0x7cf0ff, size: .09, transparent: true, opacity: .85, sizeAttenuation: true, depthWrite: false }));
-  const segs = [];
-  const maxD = 3.2, maxPer = 3;
-  pts.forEach((a, i) => {
-    let c = 0;
-    for (let j = i + 1; j < pts.length && c < maxPer; j++) {
-      if (a.distanceTo(pts[j]) < maxD) { segs.push(a.x, a.y, a.z, pts[j].x, pts[j].y, pts[j].z); c++; }
-    }
+    const r = await fetch('data/posts.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json(); posts = Array.isArray(j) ? j : (j.posts || []);
+  } catch (e) { grid.innerHTML = empty('Posts could not be loaded right now.'); bar.hidden = true; return; }
+  posts = posts.filter(p => p && p.title).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  if (!posts.length) { grid.innerHTML = empty('New training posts are coming soon.'); bar.hidden = true; return; }
+  const topics = [...new Set(posts.map(p => p.topic || 'General'))]
+    .sort((a, b) => ((TOPIC_ORDER.indexOf(a) + 1) || 99) - ((TOPIC_ORDER.indexOf(b) + 1) || 99));
+  const hue = t => topics.indexOf(t) % 5;
+  grid.innerHTML = posts.map(p => {
+    const topic = p.topic || 'General', btns = [];
+    if (p.url) btns.push(`<a class="btn btn--primary" href="${esc(p.url)}"${p.url === '#' ? '' : ' target="_blank" rel="noopener noreferrer"'}>View on LinkedIn <span aria-hidden="true">↗</span></a>`);
+    if (p.file) btns.push(`<a class="btn" href="${esc(p.file)}" download>Download <span aria-hidden="true">↓</span></a>`);
+    return `<article class="card card--hover post" data-topic="${esc(topic)}">
+      <div class="post__top"><span class="post__topic" data-hue="${hue(topic)}">${esc(topic)}</span>${p.date ? `<time class="muted" datetime="${esc(p.date)}">${fmtDate(p.date)}</time>` : ''}</div>
+      <h3>${esc(p.title)}</h3>
+      ${p.description ? `<p>${esc(p.description)}</p>` : ''}
+      ${btns.length ? `<div class="post__actions">${btns.join('')}</div>` : ''}
+    </article>`;
+  }).join('') + `<div class="card posts__empty" hidden><p class="muted">No posts in this topic yet.</p></div>`;
+  const all = ['All', ...topics];
+  bar.innerHTML = all.map((t, i) => `<button class="filter" role="tab" type="button" aria-selected="${i === 0}" data-topic="${esc(t)}">${esc(t)}<span class="filter__n">${t === 'All' ? posts.length : posts.filter(p => (p.topic || 'General') === t).length}</span></button>`).join('');
+  const cards = $$('.post', grid), emptyEl = $('.posts__empty', grid);
+  let current = 'All';
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('.filter'); if (!b || b.dataset.topic === current) return;
+    current = b.dataset.topic;
+    $$('.filter', bar).forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    const show = cards.filter(c => current === 'All' || c.dataset.topic === current);
+    const hide = cards.filter(c => !show.includes(c));
+    const apply = () => { hide.forEach(c => c.hidden = true); show.forEach(c => c.hidden = false); emptyEl.hidden = show.length > 0; };
+    const gsap = window.gsap;
+    if (!gsap || reduceMotion) { apply(); return; }
+    const visible = cards.filter(c => !c.hidden);
+    gsap.killTweensOf(cards);
+    gsap.to(visible, { opacity: 0, y: 12, scale: .97, duration: .18, ease: 'power1.in', stagger: .02,
+      onComplete: () => { apply(); gsap.fromTo(show, { opacity: 0, y: 18, scale: .97 }, { opacity: 1, y: 0, scale: 1, duration: .42, ease: 'power3.out', stagger: .05, clearProps: 'transform' });
+        if (window.ScrollTrigger) window.ScrollTrigger.refresh(); } });
   });
-  const edgeGeo = new THREE.BufferGeometry();
-  edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
-  const edges = new THREE.LineSegments(edgeGeo, lineMat(teal, .22));
-  const field = new THREE.Group(); field.add(nodes, edges);
-  root.add(field);
-
-  /* Layout / resize */
-  function layout() {
-    const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.updateProjectionMatrix();
-    const narrow = w < 900;
-    rig.position.set(narrow ? 0 : 3.9, narrow ? 2.2 : 0, 0);
-    rig.scale.setScalar(narrow ? .62 : Math.min(.85, w / 1700 + .1));
-  }
-  layout();
-  window.addEventListener('resize', layout);
-
-  /* Mouse parallax */
-  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-  if (!isSmall && !reduceMotion) {
-    window.addEventListener('pointermove', e => {
-      mouse.tx = (e.clientX / window.innerWidth - .5) * 2;
-      mouse.ty = (e.clientY / window.innerHeight - .5) * 2;
-    }, { passive: true });
-  }
-
-  const clock = new THREE.Clock();
-  let visible = true, raf = 0;
-  function frame() {
-    raf = requestAnimationFrame(frame);
-    const t = clock.getElapsedTime();
-    mouse.x += (mouse.tx - mouse.x) * .05; mouse.y += (mouse.ty - mouse.y) * .05;
-    turbine.rotation.z = -t * .35;
-    gearA.rotation.z = t * .05;
-    gearB.rotation.z = -t * .05 * (24 / 10) + .15;
-    duct.rotation.z = t * .02;
-    field.rotation.y = t * .02 + mouse.x * .12;
-    field.rotation.x = mouse.y * .06;
-    root.rotation.y = mouse.x * .22 + Math.sin(t * .2) * .08;
-    root.rotation.x = mouse.y * .12;
-    renderer.render(scene, camera);
-  }
-  const renderOnce = () => { turbine.rotation.z = .4; root.rotation.y = -.25; root.rotation.x = .1; renderer.render(scene, camera); };
-
-  if (reduceMotion) {
-    renderOnce();
-    window.addEventListener('resize', renderOnce);
-  } else {
-    frame();
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !visible) { visible = true; raf = requestAnimationFrame(frame); }
-      else if (!e.isIntersecting && visible) { visible = false; cancelAnimationFrame(raf); }
-    }, { threshold: 0 }).observe(canvas);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { cancelAnimationFrame(raf); visible = false; }
-      else if (!visible) { visible = true; raf = requestAnimationFrame(frame); }
-    });
-  }
-  canvas.dataset.ready = 'true';
 }
+initPosts();
 
-try { initScene(); } catch (e) { console.warn('3D scene disabled:', e); document.documentElement.classList.add('no-webgl'); }
+/* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
+import('./hero.js')
+  .then(m => m.initHero({ reduceMotion, isSmall }))
+  .catch(e => { console.warn('3D hero disabled:', e && e.message); document.documentElement.classList.add('no-webgl'); });
