@@ -1,0 +1,23 @@
+Official images used on the Research page (fetched 21 Nov 2026):
+
+assets/journals/aikr-logo.png
+  Source: https://aikr.irandoc.ac.ir/data/aikr/coversheet/logo_en.png
+  Official English logo of the journal Artificial Intelligence and Knowledge Representation
+  (Iranian Research Institute for Information Science and Technology, IranDoc).
+
+assets/journals/marine-eng-logo.png
+  Source: https://marine-eng.ir/files/site1/modern01/header_left_fa.png
+  Official header emblem of Journal of Marine Engineering
+  (Iranian Association of Naval Architecture & Marine Engineering), cropped to the badge.
+
+No official logo could be retrieved from the journal websites for:
+  Wind Engineering (journals.sagepub.com, 403 challenge)
+  Experimental Techniques (link.springer.com, client challenge)
+  Flow Measurement and Instrumentation (sciencedirect.com, 403)
+  Renewable Energy (sciencedirect.com, 403)
+  The ICEM CFD book / Azad University – South Tehran Branch
+Those covers use typographic monogram badges, not imitation official logos.
+
+assets/edu/unimib-logo.png
+  Source: https://www.unimib.it/sites/default/files/logo.png
+  Official logo used in the header of unimib.it (Università degli Studi di Milano-Bicocca).

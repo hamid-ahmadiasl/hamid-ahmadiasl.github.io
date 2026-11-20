@@ -267,39 +267,67 @@ export async function initHero({ reduceMotion, isSmall }) {
     const c = []; for (let j = 0; j < 192; j++) c.push(.12, .09, .26); turb.add(wire(pts, c)); }
 
 
-  /* ===== Neural network spread through the flow: nodes drift downstream with the stream; edges form
-     and dissolve with distance (plus slow random rewiring), all in fixed-size buffers ===== */
+  /* ===== Layered neural surrogate on the right ('engineering meets AI').
+     A clearly structured MLP (input → hidden → output) sits in the turbine wake.
+     Flow is drawn into the input layer; pulses travel as a forward pass; a faint
+     tensor grid, data packets and a light attention web sit around it. The left
+     (text) side stays calm. ===== */
   const net = new THREE.Group(); stage.add(net);
-  const NN = isSmall ? 22 : 34;                                  // nodes (moderate for performance)
-  let NB = { x0: -4.6, x1: 7.6, y: 3.7, z0: -2.2, z1: 1.0 };    // stage-space box the nodes live in (set in layout)
-  const nodes = [], nVel = [], nPh = [], nCol = [], coreR = [];
-  const pal = [[.05, .45, 1.0], [.20, .38, 1.0], [.42, .28, 1.0], [.66, .22, 1.0], [.90, .20, .78], [1.0, .22, .52]];   // electric blue → violet → magenta → hot pink
+  const ann = new THREE.Group(); net.add(ann);
+
+  const pal = [[.12, .72, 1.0], [.28, .48, 1.0], [.50, .32, 1.0], [.72, .24, .96], [.92, .22, .70], [1.0, .28, .52]];
   const palAt = (t, o) => { t = clamp(t, 0, 1); const f = t * (pal.length - 1), i = Math.min(pal.length - 2, Math.floor(f)), u = f - i;
     for (let c = 0; c < 3; c++) o[c] = pal[i][c] + (pal[i + 1][c] - pal[i][c]) * u; return o; };
-  const placeX = () => NB.x0 + (NB.x1 - NB.x0) * rnd();             // even spread (no bunching in the wake)
-  for (let i = 0; i < NN; i++) {
-    nodes.push(new THREE.Vector3(placeX(), (rnd() * 2 - 1) * NB.y, NB.z0 + rnd() * (NB.z1 - NB.z0)));
-    nVel.push(0.12 + rnd() * 0.16); nPh.push(rnd() * 6.28); nCol.push([0, 0, 0]); coreR.push(0.07 + rnd() * 0.06);
+
+  const layers = isSmall ? [4, 6, 3] : [5, 7, 6, 3];
+  const layerGap = isSmall ? 0.70 : 0.84;
+  const layerH = isSmall ? 2.05 : 2.55;
+  const layerIndex = [];
+  const nodes = [], nCol = [], coreR = [], nPh = [];
+  for (let li = 0; li < layers.length; li++) {
+    layerIndex.push(nodes.length);
+    const n = layers[li], x = (li - (layers.length - 1) / 2) * layerGap;
+    const col = []; palAt(li / Math.max(1, layers.length - 1), col);
+    for (let j = 0; j < n; j++) {
+      const y = (j - (n - 1) / 2) * (layerH / Math.max(1, n - 1));
+      const z = ((li % 2) ? 0.07 : -0.07) + (j % 2 ? 0.03 : -0.03);
+      nodes.push(new THREE.Vector3(x, y, z));
+      nCol.push(col.slice());
+      coreR.push(li === 0 || li === layers.length - 1 ? 0.078 : 0.062);
+      nPh.push(rnd() * 6.28);
+    }
   }
-  const nAlpha = new Float32Array(NN);
-  // per-node life cycle (staggered, period 4-10 s): lit & connected → slowly dims, edges fade → dark & isolated
-  // → re-ignites with a brighter flash and reconnects. Lit ~65% of the cycle, so most nodes glow at any moment.
-  const lifeP = new Float32Array(NN).map(() => 4 + rnd() * 6), lifeU = new Float32Array(NN).map(() => rnd()), life = new Float32Array(NN).fill(1);
-  const ss = x => x * x * (3 - 2 * x);
-  const lifeAt = u => u < .62 ? 1 : u < .78 ? 1 - ss((u - .62) / .16) : u < .84 ? 0 : u < .94 ? 1.3 * ss((u - .84) / .10) : 1.3 - .3 * ss((u - .94) / .06);
-  // every node pair is a potential edge: fixed buffers, alpha eased towards a target each frame
-  const pairs = []; for (let i = 0; i < NN; i++) for (let j = i + 1; j < NN; j++) pairs.push([i, j]);
+  const NN = nodes.length;
+  const inputFrom = 0, inputTo = layers[0];
+  const rest = new THREE.Vector3();
+
+  // directed edges: fully connected between adjacent layers, plus a few skip/attention links
+  const pairs = [];
+  for (let li = 0; li < layers.length - 1; li++) {
+    const a0 = layerIndex[li], a1 = a0 + layers[li], b0 = layerIndex[li + 1], b1 = b0 + layers[li + 1];
+    for (let i = a0; i < a1; i++) for (let j = b0; j < b1; j++) pairs.push([i, j]);
+  }
+  const layerEdges = pairs.length;
+  if (!isSmall) {
+    // a handful of skip connections (attention-style) from layer 0 → 2 and 1 → last
+    const addSkip = (la, lb, count) => {
+      const a0 = layerIndex[la], b0 = layerIndex[lb];
+      for (let k = 0; k < count; k++) pairs.push([a0 + (k * 3) % layers[la], b0 + (k * 5 + 1) % layers[lb]]);
+    };
+    if (layers.length >= 3) addSkip(0, 2, 3);
+    if (layers.length >= 4) addSkip(1, 3, 3);
+  }
   const pI = Int16Array.from(pairs, p => p[0]), pJ = Int16Array.from(pairs, p => p[1]);
-  const NE = pairs.length, eAlpha = new Float32Array(NE), eGate = new Float32Array(NE).map(() => rnd() < 0.75 ? 1 : 0);
+  const NE = pairs.length, eAlpha = new Float32Array(NE);
+  for (let k = 0; k < NE; k++) eAlpha[k] = k < layerEdges ? 0.55 : 0.28;
   const eGeo = new LineSegmentsGeometry().setPositions(new Float32Array(NE * 6)).setColors(new Float32Array(NE * 6));
   const ePosArr = eGeo.attributes.instanceStart.data.array, eColArr = eGeo.attributes.instanceColorStart.data.array;
-  const edgeMat = new LineMaterial({ vertexColors: true, linewidth: isSmall ? 1.3 : 1.6, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+  const edgeMat = new LineMaterial({ vertexColors: true, linewidth: isSmall ? 1.2 : 1.55, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
   const eLines = new LineSegments2(eGeo, edgeMat); eLines.frustumCulled = false;
-  eLines.renderOrder = 2; net.add(eLines);
-  const LINK = isSmall ? 2.2 : 2.5;                             // connection distance threshold
-  // solid cores (instanced spheres)
-  const cores = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }), NN);
-  cores.renderOrder = 6; net.add(cores);
+  eLines.renderOrder = 2; ann.add(eLines);
+
+  const cores = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }), NN);
+  cores.renderOrder = 6; ann.add(cores);
   const m4 = new THREE.Matrix4(), cc = new THREE.Color();
 
   const pointMat = new THREE.ShaderMaterial({
@@ -316,85 +344,170 @@ export async function initHero({ reduceMotion, isSmall }) {
     const p = new THREE.Points(g, pointMat); p.frustumCulled = false; p.renderOrder = 5; return p;
   }
   const nPos = new Float32Array(NN * 3);
-  const nodePts = makePoints(NN, nPos); net.add(nodePts);          // soft halos
+  const nodePts = makePoints(NN, nPos); ann.add(nodePts);
   const glow = new Float32Array(NN);
-  const NP = isSmall ? 24 : 60;                                    // pulses (was 50 / 130)
-  const pulses = []; for (let i = 0; i < NP; i++) pulses.push({ e: -1, t: 0, v: .45 + rnd() * .5, wait: rnd() * 2 });
-  const pulsePts = makePoints(NP, new Float32Array(NP * 3)); net.add(pulsePts);
-  const live = [], out = [];                                     // reused scratch arrays (no per-frame allocation)
-  function pickEdge(from) {                                      // a live edge, preferably leaving `from`
-    if (from >= 0) {
-      out.length = 0; for (let k = 0; k < NE; k++) if (eAlpha[k] > .5 && (pI[k] === from || pJ[k] === from)) out.push(k);
-      if (out.length) return out[(rnd() * out.length) | 0];
+  const nAlpha = new Float32Array(NN).fill(1);
+
+  const NP = isSmall ? 18 : 42;
+  const pulses = []; for (let i = 0; i < NP; i++) pulses.push({ e: -1, t: 0, v: .55 + rnd() * .55, wait: rnd() * 1.6, dir: true });
+  const pulsePts = makePoints(NP, new Float32Array(NP * 3)); ann.add(pulsePts);
+
+  function outgoing(from, onlyForward) {
+    const out = [];
+    for (let k = 0; k < NE; k++) {
+      if (eAlpha[k] < .15) continue;
+      if (pI[k] === from) out.push(k);
+      else if (!onlyForward && pJ[k] === from) out.push(k);
     }
-    return live.length ? live[(rnd() * live.length) | 0] : -1;
+    return out.length ? out[(rnd() * out.length) | 0] : -1;
   }
-  let netT = 0;
+
+  /* Faint tensor / matrix grid behind the network, with a slowly scrolling binary field. */
+  const gridW = isSmall ? 2.6 : 3.4, gridH = isSmall ? 2.4 : 3.0;
+  { const pts = [], cols = [];
+    const nx = isSmall ? 6 : 8, ny = isSmall ? 5 : 7;
+    const pushLine = (x0, y0, x1, y1, a) => {
+      pts.push(x0, y0, 0.55, x1, y1, 0.55);
+      const c = [0.25 * a, 0.55 * a, 1.0 * a]; cols.push(...c, ...c);
+    };
+    for (let i = 0; i <= nx; i++) { const x = -gridW / 2 + (i / nx) * gridW; pushLine(x, -gridH / 2, x, gridH / 2, i === 0 || i === nx ? 0.22 : 0.12); }
+    for (let j = 0; j <= ny; j++) { const y = -gridH / 2 + (j / ny) * gridH; pushLine(-gridW / 2, y, gridW / 2, y, j === 0 || j === ny ? 0.22 : 0.12); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    const m = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 });
+    const lines = new THREE.LineSegments(g, m); lines.renderOrder = 1; ann.add(lines);
+  }
+  const mtxCanvas = document.createElement('canvas'); mtxCanvas.width = 256; mtxCanvas.height = 192;
+  const mtxCtx = mtxCanvas.getContext('2d');
+  const mtxTex = new THREE.CanvasTexture(mtxCanvas); mtxTex.minFilter = THREE.LinearFilter; mtxTex.magFilter = THREE.LinearFilter;
+  let mtxTick = 0, mtxAcc = 0;
+  function paintMatrix(t) {
+    const w = mtxCanvas.width, h = mtxCanvas.height;
+    mtxCtx.fillStyle = 'rgba(2,8,20,0.22)'; mtxCtx.fillRect(0, 0, w, h);
+    mtxCtx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
+    const cols = 16, rows = 10;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const u = (c * 13 + r * 7 + mtxTick) % 17;
+      const bit = ((c + r + mtxTick) % 3 === 0) ? (Math.sin(t * 0.7 + c * 0.4 + r) > 0 ? '1' : '0') : (u / 16).toFixed(2).slice(1);
+      const heat = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.6 + c * 0.5 + r * 0.3));
+      mtxCtx.fillStyle = `rgba(${Math.round(80 + 140 * heat)},${Math.round(160 + 40 * heat)},255,${0.28 + 0.35 * heat})`;
+      mtxCtx.fillText(bit, 8 + c * 15, 16 + r * 17);
+    }
+    mtxTex.needsUpdate = true;
+  }
+  paintMatrix(0);
+  { const g = new THREE.PlaneGeometry(gridW * 0.92, gridH * 0.92);
+    const m = new THREE.MeshBasicMaterial({ map: mtxTex, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    const plane = new THREE.Mesh(g, m); plane.position.z = 0.54; plane.renderOrder = 1; ann.add(plane);
+  }
+
+  /* Data packets: small glyphs that fly from the incoming wake into the input layer. */
+  const NKIT = isSmall ? 8 : 16;
+  const kits = [];
+  for (let i = 0; i < NKIT; i++) kits.push({ t: 0, wait: rnd() * 2, a: new THREE.Vector3(), b: 0, live: false });
+  const kitMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.055, 0.055, 0.055),
+    new THREE.MeshBasicMaterial({ color: 0x7ad7ff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }),
+    NKIT
+  );
+  kitMesh.renderOrder = 7; kitMesh.frustumCulled = false; ann.add(kitMesh);
+  const kitCol = new THREE.Color();
+  function spawnKit(k) {
+    const target = (rnd() * (inputTo - inputFrom)) | 0;
+    const start = kits[k].a;
+    start.set(-layerGap * (layers.length - 1) / 2 - 0.85 - rnd() * 0.5, (rnd() - 0.5) * layerH * 0.9, (rnd() - 0.5) * 0.4);
+    kits[k].b = target; kits[k].t = 0; kits[k].live = true; kits[k].wait = 0;
+  }
+
   function updateNet(dt, t) {
-    netT += dt;
-    // nodes: drift downstream, bob gently, recycle at the outlet with a fade
+    // nodes breathe in place (no drift across the text)
     for (let i = 0; i < NN; i++) {
-      const v = nodes[i];
-      v.x += nVel[i] * dt; v.y += Math.sin(t * 0.35 + nPh[i]) * 0.06 * dt; v.z += Math.cos(t * 0.27 + nPh[i]) * 0.05 * dt;
-      if (v.x > NB.x1) { v.x = NB.x0 - 0.3; v.y = (rnd() * 2 - 1) * NB.y; v.z = NB.z0 + rnd() * (NB.z1 - NB.z0); }
-      const fx = smooth(NB.x0, NB.x0 + 1.2, v.x) * (1 - smooth(NB.x1 - 1.2, NB.x1, v.x));
-      lifeU[i] = (lifeU[i] + dt / lifeP[i]) % 1; life[i] = lifeAt(lifeU[i]);
-      // keep the turbine and its near wake clear: nodes are eased out of (and faded inside) an elongated zone round the rotor
-      const RZ = rig.scale.x * zoneK, zx = v.x - rig.position.x, zy = v.y - rig.position.y + RZ * 0.15;
-      const ex = zx > 0 ? zx / (RZ * 1.9) : zx / RZ, ey = zy / RZ, zd = Math.hypot(ex, ey);
-      if (zd < 1.2) { const push = (1.2 - zd) * 1.4 * dt; v.y += (ey >= 0 ? 1 : -1) * push * RZ; v.x += (ex >= 0 ? 0.4 : -0.4) * push * RZ; }
-      nAlpha[i] = fx * (0.45 + 0.55 * smooth(NB.x0, NB.x0 + (NB.x1 - NB.x0) * 0.45, v.x)) * life[i] * smooth(0.7, 1.15, zd);   // dimmer behind the text (left)
-      palAt((v.x - NB.x0) / (NB.x1 - NB.x0), nCol[i]);
-      v.toArray(nPos, i * 3);
-      const r = coreR[i] * (0.3 + 0.7 * Math.min(1.15, nAlpha[i])) * (1 + 0.5 * glow[i]);
-      m4.makeScale(r, r, r).setPosition(v); cores.setMatrixAt(i, m4);
-      const k = 0.06 + 0.94 * nAlpha[i];
-      cores.setColorAt(i, cc.setRGB((nCol[i][0] * .9 + .14) * k, (nCol[i][1] * .9 + .14) * k, (nCol[i][2] * .9 + .14) * k));
+      const base = nodes[i];
+      const bx = base.x, by = base.y + Math.sin(t * 0.9 + nPh[i]) * 0.028, bz = base.z + Math.cos(t * 0.7 + nPh[i]) * 0.02;
+      rest.set(bx, by, bz);
+      rest.toArray(nPos, i * 3);
+      glow[i] *= Math.pow(0.18, dt);
+      nAlpha[i] = 0.85 + 0.15 * Math.sin(t * 1.1 + i * 0.6);
+      const r = coreR[i] * (0.85 + 0.25 * nAlpha[i]) * (1 + 0.55 * glow[i]);
+      m4.makeScale(r, r, r).setPosition(bx, by, bz); cores.setMatrixAt(i, m4);
+      const k = 0.22 + 0.78 * nAlpha[i] + 0.35 * glow[i], c = nCol[i];
+      cores.setColorAt(i, cc.setRGB((c[0] * .85 + .15) * k, (c[1] * .85 + .15) * k, (c[2] * .85 + .15) * k));
     }
     cores.instanceMatrix.needsUpdate = true; if (cores.instanceColor) cores.instanceColor.needsUpdate = true;
-    // edges: proximity x random gate, eased so links fade in/out smoothly
-    live.length = 0;
-    const flip = dt * 0.06;
+
+    // edges, using the breathing node positions
     for (let k = 0; k < NE; k++) {
-      const i = pI[k], j = pJ[k], a = nodes[i], b = nodes[j];
-      if (rnd() < flip) eGate[k] = 1 - eGate[k];                     // slow random rewiring
-      const d = a.distanceTo(b);
-      // tied to both endpoints' brightness: an edge fades out as either node dims, back in as both re-light
-      const target = eGate[k] * (1 - smooth(LINK * 0.6, LINK, d)) * Math.min(1, nAlpha[i] * nAlpha[j] * 1.15);
-      eAlpha[k] += (target - eAlpha[k]) * Math.min(1, dt * 2.2);
-      if (eAlpha[k] > .5) live.push(k);
-      const o = k * 6, ea = eAlpha[k] * 0.62;
-      ePosArr[o] = a.x; ePosArr[o + 1] = a.y; ePosArr[o + 2] = a.z; ePosArr[o + 3] = b.x; ePosArr[o + 4] = b.y; ePosArr[o + 5] = b.z;
+      const i = pI[k], j = pJ[k];
+      const ax = nPos[i * 3], ay = nPos[i * 3 + 1], az = nPos[i * 3 + 2];
+      const bx = nPos[j * 3], by = nPos[j * 3 + 1], bz = nPos[j * 3 + 2];
+      const o = k * 6;
+      ePosArr[o] = ax; ePosArr[o + 1] = ay; ePosArr[o + 2] = az; ePosArr[o + 3] = bx; ePosArr[o + 4] = by; ePosArr[o + 5] = bz;
+      const atten = k >= layerEdges ? 0.38 : 0.7;
+      const ea = eAlpha[k] * atten * (0.75 + 0.25 * Math.sin(t * 1.4 + k * 0.2));
       eColArr[o] = nCol[i][0] * ea; eColArr[o + 1] = nCol[i][1] * ea; eColArr[o + 2] = nCol[i][2] * ea;
       eColArr[o + 3] = nCol[j][0] * ea; eColArr[o + 4] = nCol[j][1] * ea; eColArr[o + 5] = nCol[j][2] * ea;
     }
     eGeo.attributes.instanceStart.data.needsUpdate = true; eGeo.attributes.instanceColorStart.data.needsUpdate = true;
-    // halos
+
     const sA = nodePts.geometry.attributes.aSize, cA = nodePts.geometry.attributes.aColor;
     for (let i = 0; i < NN; i++) {
-      glow[i] *= Math.pow(0.15, dt);
-      const g = glow[i], b = (0.75 + 0.2 * Math.sin(t * 1.3 + i * 1.7)) * nAlpha[i], c = nCol[i];
-      sA.array[i] = coreR[i] * 5 + 0.25 * g;
-      for (let q = 0; q < 3; q++) cA.array[i * 3 + q] = c[q] * (.3 + .4 * g) * b;
+      const g = glow[i], c = nCol[i], b = (0.7 + 0.3 * nAlpha[i]);
+      sA.array[i] = coreR[i] * 5.4 + 0.3 * g;
+      for (let q = 0; q < 3; q++) cA.array[i * 3 + q] = c[q] * (.28 + .5 * g) * b;
     }
     nodePts.geometry.attributes.position.needsUpdate = true; sA.needsUpdate = true; cA.needsUpdate = true;
-    // pulses ride live edges only
+
+    // forward-pass pulses: ride directed edges input → output, then wrap
     const pp = pulsePts.geometry.attributes.position, ps = pulsePts.geometry.attributes.aSize, pc = pulsePts.geometry.attributes.aColor;
     pulses.forEach((p, n) => {
-      if (p.e < 0 || eAlpha[p.e] < .15) { p.wait -= dt; if (p.wait <= 0) { p.e = pickEdge(-1); p.t = 0; p.dir = rnd() < .5; p.wait = .3 + rnd(); } }
-      else {
+      if (p.e < 0) {
+        p.wait -= dt;
+        if (p.wait <= 0) {
+          // start on an outgoing edge from a random input node
+          const src = inputFrom + ((rnd() * (inputTo - inputFrom)) | 0);
+          p.e = outgoing(src, true); p.t = 0; p.wait = 0.2 + rnd() * 0.5;
+        }
+      } else {
         p.t += dt * p.v;
-        if (p.t >= 1) { const end = p.dir ? pI[p.e] : pJ[p.e]; glow[end] = Math.min(1.6, glow[end] + 0.8 * Math.min(1, life[end]));
-          const ne = pickEdge(end); if (ne >= 0) { p.dir = pJ[ne] === end; } p.e = ne; p.t = 0; }
+        if (p.t >= 1) {
+          const end = pJ[p.e];
+          glow[end] = Math.min(1.7, glow[end] + 0.85);
+          const ne = outgoing(end, true);
+          p.e = ne; p.t = 0;
+          if (ne < 0) p.wait = 0.15 + rnd() * 0.4;
+        }
       }
       if (p.e < 0) { ps.array[n] = 0; return; }
-      const a = p.dir ? pJ[p.e] : pI[p.e], b = p.dir ? pI[p.e] : pJ[p.e];
-      const A_ = nodes[a], B_ = nodes[b], f = Math.max(0, Math.sin(clamp(p.t, 0, 1) * Math.PI)) * eAlpha[p.e];
-      pp.array[n * 3] = A_.x + (B_.x - A_.x) * p.t; pp.array[n * 3 + 1] = A_.y + (B_.y - A_.y) * p.t; pp.array[n * 3 + 2] = A_.z + (B_.z - A_.z) * p.t;
-      ps.array[n] = 0.22;
-      for (let c = 0; c < 3; c++) pc.array[n * 3 + c] = ((nCol[a][c] + (nCol[b][c] - nCol[a][c]) * p.t) * .8 + .25) * f * 1.2;
+      const a = pI[p.e], b = pJ[p.e], tt = clamp(p.t, 0, 1);
+      const f = Math.sin(tt * Math.PI) * 0.95;
+      pp.array[n * 3] = nPos[a * 3] + (nPos[b * 3] - nPos[a * 3]) * tt;
+      pp.array[n * 3 + 1] = nPos[a * 3 + 1] + (nPos[b * 3 + 1] - nPos[a * 3 + 1]) * tt;
+      pp.array[n * 3 + 2] = nPos[a * 3 + 2] + (nPos[b * 3 + 2] - nPos[a * 3 + 2]) * tt;
+      ps.array[n] = 0.26;
+      for (let c = 0; c < 3; c++) pc.array[n * 3 + c] = ((nCol[a][c] + nCol[b][c]) * 0.5 * .75 + .3) * f * 1.25;
     });
     pp.needsUpdate = true; ps.needsUpdate = true; pc.needsUpdate = true;
+
+    // data packets flying into the input layer
+    for (let i = 0; i < NKIT; i++) {
+      const k = kits[i];
+      if (!k.live) { k.wait -= dt; if (k.wait <= 0) spawnKit(i); }
+      if (!k.live) { m4.makeScale(0, 0, 0).setPosition(0, 0, 0); kitMesh.setMatrixAt(i, m4); continue; }
+      k.t += dt * 0.85;
+      const tt = clamp(k.t, 0, 1), s = tt * tt * (3 - 2 * tt);
+      const tx = nPos[k.b * 3], ty = nPos[k.b * 3 + 1], tz = nPos[k.b * 3 + 2];
+      const x = k.a.x + (tx - k.a.x) * s, y = k.a.y + (ty - k.a.y) * s, z = k.a.z + (tz - k.a.z) * s;
+      const sc = 0.8 + 0.5 * Math.sin(tt * Math.PI);
+      m4.makeScale(sc, sc, sc).setPosition(x, y, z); kitMesh.setMatrixAt(i, m4);
+      const hue = 0.55 + 0.45 * tt;
+      kitMesh.setColorAt(i, kitCol.setRGB(0.3 + 0.5 * hue, 0.75, 1.0));
+      if (k.t >= 1) { glow[k.b] = Math.min(1.7, glow[k.b] + 1.0); k.live = false; k.wait = 0.3 + rnd() * 1.1; }
+    }
+    kitMesh.instanceMatrix.needsUpdate = true; if (kitMesh.instanceColor) kitMesh.instanceColor.needsUpdate = true;
+
+    mtxAcc += dt;
+    if (mtxAcc > 0.18) { mtxAcc = 0; mtxTick++; paintMatrix(t); }
   }
 
   // faint depth dust
@@ -429,16 +542,15 @@ export async function initHero({ reduceMotion, isSmall }) {
       camZ = 15.5; stage.position.set(0, 3.7, 0); stage.scale.setScalar(1);
       rig.position.set(-0.45, 0.2, 0); rig.scale.setScalar(1.45); zoneK = 0.95;
       X0 = -4.6; X1 = 4.6; YH = 3.0; ZH = 2.2; XC = 1.4; netAt.set(1.6, -1.0, -1.2);
-      NB = { x0: -3.4, x1: 3.6, y: 2.6, z0: -1.5, z1: 0.8 };
     } else {
       camZ = 10.5; const a = W / H;                              // keep the right-hand composition on wide/narrow desktops
       stage.position.set(clamp((a - 1.6) * 2.2, -0.8, 2.2), 0, 0); stage.scale.setScalar(clamp(a / 1.6, 0.78, 1.15));
       rig.position.set(2.75, 0.75, 0); rig.scale.setScalar(1.45); zoneK = 1.3;
       X0 = -6; X1 = 6; YH = 3.0; ZH = 2.4; XC = 1.6; netAt.set(6.4, -0.6, -1.6);
-      NB = { x0: -4.6, x1: 7.6, y: 3.7, z0: -2.2, z1: 1.0 };
     }
-    for (const v of nodes) if (v.x < NB.x0 - .3 || v.x > NB.x1 || Math.abs(v.y) > NB.y) {   // re-scatter into the new box
-      v.set(placeX(), (rnd() * 2 - 1) * NB.y, NB.z0 + rnd() * (NB.z1 - NB.z0)); }
+    // pin the layered network in the wake, to the right of the turbine (and of the text)
+    ann.position.copy(netAt);
+    ann.scale.setScalar(narrow ? 0.88 : 1);
     rig.rotation.y = YAW; rig.updateMatrix();
     T.copy(netAt).applyMatrix4(rig.matrix.clone().invert());       // network centre in the turbine frame
     ribMat.uniforms.uRes.value.set(W * pixelRatio / 2, H * pixelRatio / 2); ribMat.uniforms.uW.value = (isSmall ? 1.7 : 2.0) * pixelRatio;

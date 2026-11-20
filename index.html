@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=16">
+  <link rel="stylesheet" href="css/style.css?v=17">
   <!-- Three.js via ES module import map (used in js/main.js) -->
   <script type="importmap">
   {
@@ -124,7 +124,12 @@
         </a>
       </div>
     </div>
-    <div class="hero__legend" aria-hidden="true"><span>Velocity magnitude</span><i></i></div>
+    <div class="hero__legend" aria-hidden="true"><span>Flow field → neural surrogate</span><i></i></div>
+    <div class="hero__ai-labels" aria-hidden="true">
+      <span>Physics-informed NN</span>
+      <span>surrogate model</span>
+      <span>digital twin</span>
+    </div>
     <a class="hero__scroll" href="#about" aria-label="Scroll to About"><span></span></a>
   </section>
 
@@ -229,8 +234,8 @@
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <link rel="modulepreload" href="js/hero.js?v=12">
-  <script type="module" src="js/main.js?v=16"></script>
-  <script type="module" src="js/chat.js?v=15"></script>
+  <link rel="modulepreload" href="js/hero.js?v=17">
+  <script type="module" src="js/main.js?v=17"></script>
+  <script type="module" src="js/chat.js?v=16"></script>
 </body>
 </html>

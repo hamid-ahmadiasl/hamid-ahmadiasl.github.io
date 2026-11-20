@@ -13,6 +13,7 @@ const EMAIL = 'hmd.ahmadiasl@gmail.com';
 const STORAGE_ID = 'ha-chat-visitor-id';
 const STORAGE_LOG = 'ha-chat-history';
 const STORAGE_SEEN = 'ha-chat-last-seen';
+const STORAGE_CONV = 'ha-chat-conversation-id';
 const POLL_OPEN_MS = 5000;
 const POLL_PENDING_MS = 30000;
 const MAX_LOCAL = 80;
@@ -40,6 +41,9 @@ const I18N = {
     subtitle: 'Ask me anything, or message Hamid directly',
     openChat: "Open Hamid's Intelligent Assistant",
     closeChat: 'Close chat',
+    newChat: '🗑️ New chat',
+    newChatAria: 'Start a new chat',
+    hamidReplied: '💬 Hamid replied:',
     placeholder: 'Ask a question…',
     placeholderAsk: 'Write a message for Hamid…',
     placeholderMeeting: 'Answer here, or type skip / cancel…',
@@ -82,6 +86,9 @@ const I18N = {
     subtitle: 'هر سوالی دارید بپرسید یا مستقیم به حمید پیام دهید',
     openChat: 'باز کردن دستیار هوشمند حمید',
     closeChat: 'بستن گفتگو',
+    newChat: '🗑️ گفتگوی تازه',
+    newChatAria: 'شروع گفتگوی تازه',
+    hamidReplied: '💬 حمید پاسخ داد:',
     placeholder: 'سؤال خود را بنویسید…',
     placeholderAsk: 'پیامی برای حمید بنویسید…',
     placeholderMeeting: 'اینجا پاسخ دهید، یا skip / لغو بنویسید…',
@@ -124,6 +131,9 @@ const I18N = {
     subtitle: 'Chiedimi qualsiasi cosa o scrivi direttamente a Hamid',
     openChat: 'Apri Assistente intelligente di Hamid',
     closeChat: 'Chiudi la chat',
+    newChat: '🗑️ Nuova chat',
+    newChatAria: 'Inizia una nuova chat',
+    hamidReplied: '💬 Hamid ha risposto:',
     placeholder: 'Fai una domanda…',
     placeholderAsk: 'Scrivi un messaggio per Hamid…',
     placeholderMeeting: 'Rispondi qui, oppure scrivi skip / cancel…',
@@ -193,9 +203,56 @@ function visitorId() {
   }
 }
 
-function loadLocal() {
+function isReloadNavigation() {
   try {
-    const raw = localStorage.getItem(STORAGE_LOG);
+    const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    return !!(nav && nav.type === 'reload');
+  } catch {
+    return false;
+  }
+}
+
+function conversationId() {
+  try {
+    let id = sessionStorage.getItem(STORAGE_CONV);
+    if (!id) {
+      id = uuid();
+      sessionStorage.setItem(STORAGE_CONV, id);
+    }
+    return id;
+  } catch {
+    if (!state.conversationId) state.conversationId = uuid();
+    return state.conversationId;
+  }
+}
+
+function rotateConversationId() {
+  const id = uuid();
+  try {
+    sessionStorage.setItem(STORAGE_CONV, id);
+  } catch {
+    /* ignore */
+  }
+  state.conversationId = id;
+  return id;
+}
+
+function clearLocalHistory() {
+  try {
+    sessionStorage.removeItem(STORAGE_LOG);
+    localStorage.removeItem(STORAGE_LOG);
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadLocal() {
+  if (isReloadNavigation()) {
+    clearLocalHistory();
+    return [];
+  }
+  try {
+    const raw = sessionStorage.getItem(STORAGE_LOG);
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list : [];
   } catch {
@@ -205,7 +262,7 @@ function loadLocal() {
 
 function saveLocal(messages) {
   try {
-    localStorage.setItem(STORAGE_LOG, JSON.stringify(messages.slice(-MAX_LOCAL)));
+    sessionStorage.setItem(STORAGE_LOG, JSON.stringify(messages.slice(-MAX_LOCAL)));
   } catch {
     /* private mode / quota */
   }
@@ -282,6 +339,8 @@ let state = {
   pendingFile: null,
   flowPlaceholder: '',
   flowOptions: null,
+  sessionFresh: true,
+  conversationId: null,
 };
 
 function chips() {
@@ -316,9 +375,12 @@ function build() {
             <p class="chat-panel__sub">${escapeHtml(T.subtitle)}</p>
           </div>
         </div>
-        <button type="button" class="chat-panel__x" id="chatClose" aria-label="${escapeHtml(T.closeChat)}">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
-        </button>
+        <div class="chat-panel__actions">
+          <button type="button" class="chat-panel__new" id="chatNew" title="${escapeHtml(T.newChat)}" aria-label="${escapeHtml(T.newChatAria)}">${escapeHtml(T.newChat)}</button>
+          <button type="button" class="chat-panel__x" id="chatClose" aria-label="${escapeHtml(T.closeChat)}">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
+          </button>
+        </div>
       </header>
       <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
       <div class="chat-chips" id="chatChips"></div>
@@ -369,6 +431,7 @@ function build() {
 
   $('#chatLaunch', root).addEventListener('click', () => toggle());
   $('#chatClose', root).addEventListener('click', () => toggle(false));
+  $('#chatNew', root).addEventListener('click', () => startNewChat());
   $('#chatForm', root).addEventListener('submit', onSubmit);
   $('#chatAttach', root).addEventListener('click', () => $('#chatFile', root)?.click());
   $('#chatFile', root).addEventListener('change', onFilePicked);
@@ -387,19 +450,49 @@ function build() {
   });
 
   state.ready = true;
-  state.messages = loadLocal();
-  if (!state.messages.length) {
-    state.messages.push({
-      id: 'greeting',
-      role: 'assistant',
-      text: T.greeting,
-      ts: Date.now(),
-      source: 'greeting',
-    });
-    saveLocal(state.messages);
+  const cached = loadLocal();
+  if (cached.length) {
+    state.messages = cached;
+    state.sessionFresh = false;
+    rerender();
+    syncLastTs();
+  } else {
+    startFreshWelcome({ keepLastTs: true });
+  }
+}
+
+function welcomeMessage() {
+  return {
+    id: 'greeting-' + Date.now(),
+    role: 'assistant',
+    text: T.greeting,
+    ts: Date.now(),
+    source: 'greeting',
+  };
+}
+
+function startFreshWelcome({ keepLastTs = false } = {}) {
+  state.messages = [welcomeMessage()];
+  state.sessionFresh = true;
+  state.askMode = false;
+  state.meetingMode = false;
+  state.flowOptions = null;
+  state.flowPlaceholder = '';
+  saveLocal(state.messages);
+  if (keepLastTs) state.lastTs = lastSeen();
+  else {
+    state.lastTs = Date.now();
+    setLastSeen(state.lastTs);
   }
   rerender();
-  syncLastTs();
+  syncComposer();
+}
+
+function startNewChat() {
+  clearLocalHistory();
+  rotateConversationId();
+  leaveModesForChat();
+  startFreshWelcome({ keepLastTs: false });
 }
 
 function autosize() {
@@ -469,7 +562,16 @@ function mergeRemote(list) {
     if (!m || !m.text) continue;
     if (m.id && state.messages.some((x) => x.id === m.id)) continue;
     if (state.messages.some((x) => x.role === m.role && x.text === m.text && x.ts === m.ts)) continue;
-    appendMsg(m, false);
+    if (state.sessionFresh) {
+      if (m.role !== 'hamid') {
+        if (Number(m.ts) > state.lastTs) state.lastTs = Number(m.ts);
+        continue;
+      }
+      const text = m.text.startsWith(T.hamidReplied) ? m.text : `${T.hamidReplied} ${m.text}`;
+      appendMsg({ ...m, text, source: m.source || 'hamid-missed' }, false);
+    } else {
+      appendMsg(m, false);
+    }
     added += 1;
   }
   if (added) saveLocal(state.messages);
@@ -747,6 +849,7 @@ function emailFallback(extra) {
 }
 
 async function sendChat(text) {
+  state.sessionFresh = false;
   build();
   if (state.sending) return;
   state.sending = true;
@@ -762,7 +865,7 @@ async function sendChat(text) {
   try {
     const data = await api('/chat', {
       method: 'POST',
-      body: { visitorId: visitorId(), message: text, page: currentPage() },
+      body: { visitorId: visitorId(), conversationId: conversationId(), message: text, page: currentPage() },
     });
     showTyping(false);
     if (data.message) appendMsg(data.message);
@@ -790,6 +893,7 @@ async function sendChat(text) {
 }
 
 async function sendAsk(text) {
+  state.sessionFresh = false;
   build();
   if (state.sending) return;
   state.sending = true;
@@ -806,6 +910,7 @@ async function sendAsk(text) {
       method: 'POST',
       body: {
         visitorId: visitorId(),
+        conversationId: conversationId(),
         message: text,
         name: ($('#chatName')?.value || '').trim(),
         email: ($('#chatEmail')?.value || '').trim(),
@@ -847,6 +952,7 @@ async function startMeeting() {
 }
 
 async function sendMeeting(text, action, opts = {}) {
+  state.sessionFresh = false;
   build();
   if (state.sending) return;
   state.sending = true;
@@ -866,6 +972,7 @@ async function sendMeeting(text, action, opts = {}) {
       method: 'POST',
       body: {
         visitorId: visitorId(),
+        conversationId: conversationId(),
         action,
         message: text,
         lang: LANG,
@@ -925,6 +1032,7 @@ function clearAttach() {
 }
 
 async function sendUpload() {
+  state.sessionFresh = false;
   const file = state.pendingFile;
   if (!file || state.sending) return;
   build();
@@ -942,6 +1050,7 @@ async function sendUpload() {
   try {
     const form = new FormData();
     form.append('visitorId', visitorId());
+    form.append('conversationId', conversationId());
     form.append('file', file, file.name);
     if (note) form.append('note', note);
     form.append('page', currentPage());

@@ -93,10 +93,24 @@ if (!document.body.classList.contains('page--sub')) {
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
 if ($('#scene')) {
-  import('./hero.js?v=12')
+  import('./hero.js?v=17')
     .then((m) => m.initHero({ reduceMotion: false, isSmall }))
     .catch((e) => {
       console.warn('3D hero disabled:', e && e.message);
       document.documentElement.classList.add('no-webgl');
     });
+}
+
+/* ---------- Education / patent flourish pop-ups ---------- */
+if (document.querySelector('[data-flourish]')) {
+  import('./flourish.js?v=17')
+    .then((m) => m.initFlourish())
+    .catch((e) => console.warn('flourish unavailable:', e && e.message));
+}
+
+/* ---------- Research journal books ---------- */
+if (document.getElementById('pubShelf')) {
+  import('./pubs.js?v=17')
+    .then((m) => m.initPubs())
+    .catch((e) => console.warn('pubs unavailable:', e && e.message));
 }
