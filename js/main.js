@@ -33,13 +33,6 @@ function initAnimations() {
   gsap.registerPlugin(ScrollTrigger);
   gsap.ticker.lagSmoothing(0);   // keep intro timing honest even if the first frames are slow (heavy WebGL start-up)
 
-  // gentle scroll parallax on the wallpaper illustrations
-  $$('.wp').forEach(el => {
-    const sp = parseFloat(el.dataset.speed || '0.4');
-    gsap.fromTo(el, { y: -sp * 90 }, { y: sp * 90, ease: 'none',
-      scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
-  });
-
   gsap.from('.hero-anim', { opacity: 0, y: 28, duration: .9, ease: 'power3.out', stagger: .12, delay: .15 });
 
   $$('.reveal').forEach(el => {
@@ -113,6 +106,6 @@ async function initPosts() {
 initPosts();
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
-import('./hero.js?v=3')
+import('./hero.js?v=4')
   .then(m => m.initHero({ reduceMotion, isSmall }))
   .catch(e => { console.warn('3D hero disabled:', e && e.message); document.documentElement.classList.add('no-webgl'); });

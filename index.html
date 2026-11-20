@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
 
   <!-- Three.js via ES module import map (used in js/main.js) -->
   <script type="importmap">
@@ -37,6 +37,8 @@
   </script>
 </head>
 <body>
+  <!-- One continuous NN + CFD wallpaper (assets/wallpaper.svg), fixed behind all content below the hero -->
+  <div class="wallpaper" aria-hidden="true"></div>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="nav" id="nav">
@@ -93,9 +95,8 @@
 
   <main id="main">
 
-    <!-- ABOUT (each section below also carries a faint hand-built SVG line-art "wallpaper" illustration: img.wp) -->
+    <!-- ABOUT -->
     <section class="section" id="about">
-      <img class="wp wp--about" data-speed="0.5" src="assets/bg/neural-net.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="860" height="600">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">01 — About</p>
@@ -126,7 +127,6 @@
 
     <!-- EDUCATION -->
     <section class="section" id="education">
-      <img class="wp wp--edu" data-speed="-0.4" src="assets/bg/equations.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="980" height="720">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">02 — Education</p>
@@ -168,9 +168,6 @@
 
     <!-- RESEARCH -->
     <section class="section" id="research">
-      <img class="wp wp--res-a" data-speed="0.5" src="assets/bg/mesh-airfoil.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1000" height="620">
-      <img class="wp wp--res-b" data-speed="-0.5" src="assets/bg/savonius.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="700" height="700">
-      <img class="wp wp--res-c" data-speed="0.4" src="assets/bg/rsm.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="760" height="640">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">03 — Research &amp; Publications</p>
@@ -243,7 +240,6 @@
 
     <!-- PATENTS -->
     <section class="section" id="patents">
-      <img class="wp wp--pat" data-speed="0.3" src="assets/bg/wind-tunnel.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1280" height="440">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">04 — Patents</p>
@@ -268,7 +264,6 @@
 
     <!-- EXPERIENCE -->
     <section class="section" id="experience">
-      <img class="wp wp--exp" data-speed="-0.4" src="assets/bg/vessel.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1100" height="760">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">05 — Experience</p>
@@ -337,7 +332,6 @@
 
     <!-- SKILLS -->
     <section class="section" id="skills">
-      <img class="wp wp--skill" data-speed="0.4" src="assets/bg/hpc.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1010" height="680">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">06 — Skills</p>
@@ -389,7 +383,6 @@
 
     <!-- TRAINING & INSIGHTS (cards are generated from data/posts.json by js/main.js) -->
     <section class="section" id="insights">
-      <img class="wp wp--ins" data-speed="0.35" src="assets/bg/neural-net.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="860" height="600">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">07 — Training &amp; Insights</p>
@@ -404,7 +397,6 @@
 
     <!-- HONORS -->
     <section class="section" id="honors">
-      <img class="wp wp--honor" data-speed="-0.4" src="assets/bg/ducted-turbine.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="980" height="620">
       <div class="wrap">
         <header class="section__head reveal">
           <p class="eyebrow">08 — Honors &amp; Awards</p>
@@ -454,7 +446,6 @@
 
     <!-- CONTACT -->
     <section class="section section--contact" id="contact">
-      <img class="wp wp--contact" data-speed="0.3" src="assets/bg/cylinder-wake.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" width="1000" height="460">
       <div class="wrap">
         <div class="contact card reveal">
           <p class="eyebrow">09 — Contact</p>
@@ -481,7 +472,7 @@
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <link rel="modulepreload" href="js/hero.js?v=3">
-  <script type="module" src="js/main.js?v=3"></script>
+  <link rel="modulepreload" href="js/hero.js?v=4">
+  <script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>
