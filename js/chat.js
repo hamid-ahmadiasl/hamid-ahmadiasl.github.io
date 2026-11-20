@@ -16,19 +16,152 @@ const STORAGE_SEEN = 'ha-chat-last-seen';
 const POLL_OPEN_MS = 5000;
 const POLL_PENDING_MS = 30000;
 const MAX_LOCAL = 80;
+const ACCEPT_UPLOAD = '.pdf,.doc,.docx,.odt,.txt,.rtf,.png,.jpg,.jpeg,.xlsx,.csv,.zip';
 
-const GREETING =
-  "Hi — I can answer questions about Hamid’s research, publications, experience and background, using only what’s on this site. If you’d like to reach him personally, tap Ask Hamid directly.";
+const I18N = {
+  en: {
+    greeting:
+      "Hi — I can answer questions about Hamid’s research, publications, experience and background, using only what’s on this site. If you’d like to reach him personally, tap Ask Hamid directly. You can also request a meeting or send him a document.",
+    research: 'Research interests',
+    researchPrompt: "What are Hamid’s research interests?",
+    publications: 'Publications',
+    publicationsPrompt: 'What has Hamid published recently?',
+    experience: 'Experience',
+    experiencePrompt: 'Can you summarise Hamid’s professional experience?',
+    ask: 'Ask Hamid directly',
+    meeting: '📅 Request a meeting',
+    attach: '📎',
+    attachTitle: 'Send a document to Hamid (CV, form…)',
+    attachNote: 'Optional note for Hamid',
+    attachSend: 'Send file',
+    attachCancel: 'Cancel',
+    attachPicked: 'Selected',
+    title: 'Site assistant',
+    subtitle: 'Answers from this site · or message Hamid',
+    openChat: 'Open chat about Hamid',
+    closeChat: 'Close chat',
+    placeholder: 'Ask a question…',
+    placeholderAsk: 'Write a message for Hamid…',
+    placeholderMeeting: 'Answer here, or type skip / cancel…',
+    yourMessage: 'Your message',
+    send: 'Send',
+    askNote:
+      'Your message will be sent to Hamid on Telegram. He’ll reply in this window. A name and email are optional, so he can reach you — a phone number is never asked for.',
+    name: 'Name',
+    email: 'Email',
+    optional: 'Optional',
+    askHint: 'You’re now writing directly to Hamid. Tell him what you’d like to ask — he’ll reply in this chat. Follow-ups stay with him until you leave this mode.',
+    askReceipt: 'Your message was sent to Hamid. You can keep writing here — his reply will appear in this chat.',
+    fallback: 'The assistant isn’t connected at the moment. You can email Hamid at ' + EMAIL + '.',
+    skip: 'Skip',
+    cancel: 'Cancel',
+    you: 'You',
+    hamid: 'Hamid',
+    note: 'Note',
+    assistant: 'Assistant',
+    typing: 'Assistant is typing',
+  },
+  fa: {
+    greeting:
+      'سلام — می‌توانم درباره پژوهش، مقالات، تجربه و پیش‌زمینه حمید، فقط بر اساس همین سایت، جواب بدهم. برای پیام مستقیم، «پیام مستقیم به حمید» را بزنید. می‌توانید درخواست جلسه بدهید یا سندی برایش بفرستید.',
+    research: 'زمینه‌های پژوهش',
+    researchPrompt: 'زمینه‌های پژوهش حمید چیست؟',
+    publications: 'مقالات',
+    publicationsPrompt: 'حمید اخیراً چه مقالاتی منتشر کرده است؟',
+    experience: 'تجربه کاری',
+    experiencePrompt: 'می‌توانی تجربه حرفه‌ای حمید را خلاصه کنی؟',
+    ask: 'پیام مستقیم به حمید',
+    meeting: '📅 درخواست جلسه',
+    attach: '📎',
+    attachTitle: 'ارسال سند برای حمید (رزومه، فرم و…)',
+    attachNote: 'یادداشت اختیاری برای حمید',
+    attachSend: 'ارسال فایل',
+    attachCancel: 'لغو',
+    attachPicked: 'انتخاب شد',
+    title: 'دستیار سایت',
+    subtitle: 'پاسخ بر اساس این سایت · یا پیام به حمید',
+    openChat: 'باز کردن گفتگو درباره حمید',
+    closeChat: 'بستن گفتگو',
+    placeholder: 'سؤال خود را بنویسید…',
+    placeholderAsk: 'پیامی برای حمید بنویسید…',
+    placeholderMeeting: 'اینجا پاسخ دهید، یا skip / لغو بنویسید…',
+    yourMessage: 'پیام شما',
+    send: 'ارسال',
+    askNote:
+      'پیام شما از طریق تلگرام برای حمید فرستاده می‌شود و جوابش همین‌جا می‌آید. نام و ایمیل اختیاری است تا بتواند با شما تماس بگیرد — شماره تلفن هرگز پرسیده نمی‌شود.',
+    name: 'نام',
+    email: 'ایمیل',
+    optional: 'اختیاری',
+    askHint: 'اکنون مستقیماً برای حمید می‌نویسید. سؤال‌تان را بگویید — پاسخ او همین‌جا می‌آید. پیام‌های بعدی هم برای او می‌ماند تا از این حالت خارج شوید.',
+    askReceipt: 'پیام‌تان برای حمید ارسال شد. می‌توانید همین‌جا ادامه دهید — پاسخ او در این گفتگو ظاهر می‌شود.',
+    fallback: 'دستیار فعلاً وصل نیست. می‌توانید به حمید ایمیل بزنید: ' + EMAIL,
+    skip: 'رد کردن',
+    cancel: 'لغو',
+    you: 'شما',
+    hamid: 'حمید',
+    note: 'یادداشت',
+    assistant: 'دستیار',
+    typing: 'دستیار در حال نوشتن است',
+  },
+  it: {
+    greeting:
+      'Ciao — posso rispondere a domande su ricerca, pubblicazioni, esperienza e percorso di Hamid, usando solo ciò che è su questo sito. Per scrivergli di persona, tocca Chiedi direttamente a Hamid. Puoi anche richiedere un incontro o inviargli un documento.',
+    research: 'Interessi di ricerca',
+    researchPrompt: 'Quali sono gli interessi di ricerca di Hamid?',
+    publications: 'Pubblicazioni',
+    publicationsPrompt: 'Cosa ha pubblicato di recente Hamid?',
+    experience: 'Esperienza',
+    experiencePrompt: 'Puoi riassumere l’esperienza professionale di Hamid?',
+    ask: 'Chiedi direttamente a Hamid',
+    meeting: '📅 Richiedi un incontro',
+    attach: '📎',
+    attachTitle: 'Invia un documento a Hamid (CV, modulo…)',
+    attachNote: 'Nota facoltativa per Hamid',
+    attachSend: 'Invia file',
+    attachCancel: 'Annulla',
+    attachPicked: 'Selezionato',
+    title: 'Assistente del sito',
+    subtitle: 'Risposte da questo sito · oppure scrivi a Hamid',
+    openChat: 'Apri la chat su Hamid',
+    closeChat: 'Chiudi la chat',
+    placeholder: 'Fai una domanda…',
+    placeholderAsk: 'Scrivi un messaggio per Hamid…',
+    placeholderMeeting: 'Rispondi qui, oppure scrivi skip / cancel…',
+    yourMessage: 'Il tuo messaggio',
+    send: 'Invia',
+    askNote:
+      'Il messaggio sarà inviato a Hamid su Telegram. Ti risponderà in questa finestra. Nome e email sono facoltativi, così può raggiungerti — un numero di telefono non viene mai chiesto.',
+    name: 'Nome',
+    email: 'Email',
+    optional: 'Facoltativo',
+    askHint: 'Stai scrivendo direttamente a Hamid. Digli cosa vorresti chiedergli — ti risponderà in questa chat. I messaggi successivi restano per lui finché non esci da questa modalità.',
+    askReceipt: 'Il messaggio è stato inviato a Hamid. Puoi continuare a scrivere qui — la sua risposta apparirà in questa chat.',
+    fallback: 'L’assistente non è collegato in questo momento. Puoi scrivere a Hamid: ' + EMAIL + '.',
+    skip: 'Salta',
+    cancel: 'Annulla',
+    you: 'Tu',
+    hamid: 'Hamid',
+    note: 'Nota',
+    assistant: 'Assistente',
+    typing: 'L’assistente sta scrivendo',
+  },
+};
 
-const CHIPS = [
-  { label: 'Research interests', prompt: "What are Hamid’s research interests?" },
-  { label: 'Publications', prompt: "What has Hamid published recently?" },
-  { label: 'Experience', prompt: 'Can you summarise Hamid’s professional experience?' },
-  { label: 'Ask Hamid directly', ask: true },
-];
+function detectUiLang() {
+  try {
+    const html = String(document.documentElement.lang || '').toLowerCase();
+    const nav = String(navigator.language || navigator.userLanguage || '').toLowerCase();
+    const pick = [html, nav].find((s) => s.startsWith('fa') || s.startsWith('it') || s.startsWith('en'));
+    if (pick?.startsWith('fa')) return 'fa';
+    if (pick?.startsWith('it')) return 'it';
+  } catch {
+    /* ignore */
+  }
+  return 'en';
+}
 
-const FALLBACK =
-  'The assistant isn’t connected at the moment. You can email Hamid at ' + EMAIL + '.';
+const LANG = detectUiLang();
+const T = I18N[LANG] || I18N.en;
 
 const $ = (s, c = document) => c.querySelector(s);
 
@@ -119,10 +252,10 @@ function renderRich(text) {
 }
 
 function roleLabel(role) {
-  if (role === 'hamid') return 'Hamid';
-  if (role === 'user') return 'You';
-  if (role === 'system') return 'Note';
-  return 'Assistant';
+  if (role === 'hamid') return T.hamid;
+  if (role === 'user') return T.you;
+  if (role === 'system') return T.note;
+  return T.assistant;
 }
 
 function currentPage() {
@@ -139,18 +272,31 @@ let state = {
   ready: false,
   open: false,
   askMode: false,
+  meetingMode: false,
   sending: false,
   messages: [],
   pollTimer: null,
   lastTs: 0,
+  pendingFile: null,
 };
+
+function chips() {
+  return [
+    { label: T.research, prompt: T.researchPrompt },
+    { label: T.publications, prompt: T.publicationsPrompt },
+    { label: T.experience, prompt: T.experiencePrompt },
+    { label: T.ask, ask: true },
+    { label: T.meeting, meeting: true },
+  ];
+}
 
 function build() {
   if (state.ready) return;
   const root = document.createElement('div');
   root.className = 'chat-root';
+  if (LANG === 'fa') root.setAttribute('lang', 'fa');
   root.innerHTML = `
-    <button type="button" class="chat-launch" id="chatLaunch" aria-label="Open chat about Hamid" aria-expanded="false" aria-controls="chatPanel">
+    <button type="button" class="chat-launch" id="chatLaunch" aria-label="${escapeHtml(T.openChat)}" aria-expanded="false" aria-controls="chatPanel">
       <span class="chat-launch__icon" aria-hidden="true">
         <svg class="chat-launch__bubble" viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v9A2.5 2.5 0 0 1 19.5 18H8.2L3 21.2V6.5A2.5 2.5 0 0 1 4.5 4Zm.3 2A.8.8 0 0 0 4 6.8v11.2l3.3-2h12c.4 0 .7-.3.7-.8v-9a.8.8 0 0 0-.8-.8H4.8Z"/></svg>
         <svg class="chat-launch__close" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
@@ -162,27 +308,37 @@ function build() {
         <div class="chat-panel__who">
           <span class="chat-panel__avatar" aria-hidden="true">HA</span>
           <div>
-            <h2 id="chatTitle">Site assistant</h2>
-            <p class="chat-panel__sub">Answers from this site · or message Hamid</p>
+            <h2 id="chatTitle">${escapeHtml(T.title)}</h2>
+            <p class="chat-panel__sub">${escapeHtml(T.subtitle)}</p>
           </div>
         </div>
-        <button type="button" class="chat-panel__x" id="chatClose" aria-label="Close chat">
+        <button type="button" class="chat-panel__x" id="chatClose" aria-label="${escapeHtml(T.closeChat)}">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
         </button>
       </header>
       <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
       <div class="chat-chips" id="chatChips"></div>
       <form class="chat-askmeta" id="chatAskMeta" hidden>
-        <p class="chat-askmeta__note">Your message will be sent to Hamid on Telegram. He’ll reply in this window. A name and email are optional, so he can reach you — a phone number is never asked for.</p>
+        <p class="chat-askmeta__note">${escapeHtml(T.askNote)}</p>
         <div class="chat-askmeta__fields">
-          <label>Name <input type="text" id="chatName" name="name" autocomplete="name" maxlength="80" placeholder="Optional"></label>
-          <label>Email <input type="email" id="chatEmail" name="email" autocomplete="email" maxlength="120" placeholder="Optional"></label>
+          <label>${escapeHtml(T.name)} <input type="text" id="chatName" name="name" autocomplete="name" maxlength="80" placeholder="${escapeHtml(T.optional)}"></label>
+          <label>${escapeHtml(T.email)} <input type="email" id="chatEmail" name="email" autocomplete="email" maxlength="120" placeholder="${escapeHtml(T.optional)}"></label>
         </div>
       </form>
+      <div class="chat-attachbar" id="chatAttachBar" hidden>
+        <p class="chat-attachbar__file" id="chatAttachName"></p>
+        <input type="text" id="chatAttachNote" maxlength="400" placeholder="${escapeHtml(T.attachNote)}">
+        <div class="chat-attachbar__actions">
+          <button type="button" class="chat-chip chat-chip--ask" id="chatAttachSend">${escapeHtml(T.attachSend)}</button>
+          <button type="button" class="chat-chip" id="chatAttachCancel">${escapeHtml(T.attachCancel)}</button>
+        </div>
+      </div>
       <form class="chat-compose" id="chatForm">
-        <label class="visually-hidden" for="chatInput">Your message</label>
-        <textarea id="chatInput" rows="1" maxlength="1500" placeholder="Ask a question…" required></textarea>
-        <button type="submit" class="chat-send" id="chatSend" aria-label="Send">
+        <label class="visually-hidden" for="chatInput">${escapeHtml(T.yourMessage)}</label>
+        <button type="button" class="chat-attach" id="chatAttach" title="${escapeHtml(T.attachTitle)}" aria-label="${escapeHtml(T.attachTitle)}">${escapeHtml(T.attach)}</button>
+        <input type="file" id="chatFile" accept="${ACCEPT_UPLOAD}" hidden>
+        <textarea id="chatInput" rows="1" maxlength="1500" placeholder="${escapeHtml(T.placeholder)}" required></textarea>
+        <button type="submit" class="chat-send" id="chatSend" aria-label="${escapeHtml(T.send)}">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3.4 12 20 3.5 14.8 20.5l-3.3-6.2-6.2-3.3L20 3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none"/></svg>
         </button>
       </form>
@@ -190,14 +346,18 @@ function build() {
   `;
   document.body.appendChild(root);
 
-  CHIPS.forEach((chip) => {
+  chips().forEach((chip) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'chat-chip' + (chip.ask ? ' chat-chip--ask' : '');
+    btn.className = 'chat-chip' + (chip.ask ? ' chat-chip--ask' : chip.meeting ? ' chat-chip--meeting' : '');
     btn.textContent = chip.label;
     btn.addEventListener('click', () => {
-      if (chip.ask) enterAskMode();
-      else sendChat(chip.prompt);
+      if (chip.ask) enterAskMode(true);
+      else if (chip.meeting) startMeeting();
+      else {
+        leaveModesForChat();
+        sendChat(chip.prompt);
+      }
     });
     $('#chatChips', root).appendChild(btn);
   });
@@ -205,6 +365,10 @@ function build() {
   $('#chatLaunch', root).addEventListener('click', () => toggle());
   $('#chatClose', root).addEventListener('click', () => toggle(false));
   $('#chatForm', root).addEventListener('submit', onSubmit);
+  $('#chatAttach', root).addEventListener('click', () => $('#chatFile', root)?.click());
+  $('#chatFile', root).addEventListener('change', onFilePicked);
+  $('#chatAttachSend', root).addEventListener('click', sendUpload);
+  $('#chatAttachCancel', root).addEventListener('click', clearAttach);
   const input = $('#chatInput', root);
   input.addEventListener('input', autosize);
   input.addEventListener('keydown', (e) => {
@@ -223,7 +387,7 @@ function build() {
     state.messages.push({
       id: 'greeting',
       role: 'assistant',
-      text: GREETING,
+      text: T.greeting,
       ts: Date.now(),
       source: 'greeting',
     });
@@ -266,6 +430,7 @@ function bubbleEl(msg) {
   who.textContent = roleLabel(msg.role);
   const body = document.createElement('div');
   body.className = 'chat-bubble__text';
+  body.setAttribute('dir', 'auto');
   body.innerHTML = renderRich(msg.text);
   wrap.append(who, body);
   return wrap;
@@ -298,7 +463,6 @@ function mergeRemote(list) {
   for (const m of list || []) {
     if (!m || !m.text) continue;
     if (m.id && state.messages.some((x) => x.id === m.id)) continue;
-    // Same text+role+ts already present (local greeting etc.)
     if (state.messages.some((x) => x.role === m.role && x.text === m.text && x.ts === m.ts)) continue;
     appendMsg(m, false);
     added += 1;
@@ -318,7 +482,7 @@ function showTyping(on) {
   if (el) return;
   el = document.createElement('div');
   el.className = 'chat-typing';
-  el.setAttribute('aria-label', 'Assistant is typing');
+  el.setAttribute('aria-label', T.typing);
   el.innerHTML = '<span></span><span></span><span></span>';
   log.appendChild(el);
   log.scrollTop = log.scrollHeight;
@@ -374,26 +538,70 @@ function toggle(force) {
   }
 }
 
-function enterAskMode(on = true) {
-  state.askMode = on;
-  const meta = $('#chatAskMeta');
-  if (meta) meta.hidden = !on;
+function syncComposer() {
   const input = $('#chatInput');
   if (input) {
-    input.placeholder = on ? 'Write a message for Hamid…' : 'Ask a question…';
+    input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
     input.focus();
   }
-  const chips = $('#chatChips');
-  chips?.classList.toggle('is-ask', on);
-  if (on) {
+  const chipsEl = $('#chatChips');
+  chipsEl?.classList.toggle('is-ask', state.askMode);
+  chipsEl?.classList.toggle('is-meeting', state.meetingMode);
+  const meta = $('#chatAskMeta');
+  if (meta) meta.hidden = !state.askMode;
+  const skip = $('#chatMeetingSkip');
+  const cancel = $('#chatMeetingCancel');
+  if (skip) skip.hidden = !state.meetingMode;
+  if (cancel) cancel.hidden = !state.meetingMode;
+}
+
+function leaveModesForChat() {
+  state.askMode = false;
+  state.meetingMode = false;
+  syncComposer();
+}
+
+function enterAskMode(on = true) {
+  const starting = on && !state.askMode;
+  state.askMode = on;
+  if (on) state.meetingMode = false;
+  syncComposer();
+  if (starting) {
     appendMsg({
       id: 'ask-hint-' + Date.now(),
       role: 'system',
-      text: 'You’re now writing directly to Hamid. Tell him what you’d like to ask — he’ll reply in this chat.',
+      text: T.askHint,
       ts: Date.now(),
       source: 'hint',
     });
   }
+}
+
+function enterMeetingMode(on = true) {
+  state.meetingMode = on;
+  if (on) state.askMode = false;
+  ensureMeetingActions();
+  syncComposer();
+}
+
+function ensureMeetingActions() {
+  const chipsEl = $('#chatChips');
+  if (!chipsEl || $('#chatMeetingSkip')) return;
+  const skip = document.createElement('button');
+  skip.type = 'button';
+  skip.id = 'chatMeetingSkip';
+  skip.className = 'chat-chip chat-chip--meeting';
+  skip.textContent = T.skip;
+  skip.hidden = true;
+  skip.addEventListener('click', () => sendMeeting('skip', 'skip'));
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.id = 'chatMeetingCancel';
+  cancel.className = 'chat-chip';
+  cancel.textContent = T.cancel;
+  cancel.hidden = true;
+  cancel.addEventListener('click', () => sendMeeting('cancel', 'cancel'));
+  chipsEl.append(skip, cancel);
 }
 
 function offerHandoff() {
@@ -405,7 +613,7 @@ function offerHandoff() {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'chat-chip chat-chip--ask';
-  btn.textContent = 'Ask Hamid directly';
+  btn.textContent = T.ask;
   btn.addEventListener('click', () => {
     const lastUser = [...state.messages].reverse().find((m) => m.role === 'user' && m.source !== 'ask');
     enterAskMode(true);
@@ -417,7 +625,12 @@ function offerHandoff() {
       }
     }
   });
-  wrap.appendChild(btn);
+  const meet = document.createElement('button');
+  meet.type = 'button';
+  meet.className = 'chat-chip chat-chip--meeting';
+  meet.textContent = T.meeting;
+  meet.addEventListener('click', () => startMeeting());
+  wrap.append(btn, meet);
   log.appendChild(wrap);
   log.scrollTop = log.scrollHeight;
 }
@@ -429,7 +642,8 @@ function onSubmit(e) {
   if (!text || state.sending) return;
   input.value = '';
   autosize();
-  if (state.askMode) sendAsk(text);
+  if (state.meetingMode) sendMeeting(text, 'answer');
+  else if (state.askMode) sendAsk(text);
   else sendChat(text);
 }
 
@@ -440,10 +654,11 @@ async function api(path, opts = {}) {
     err.code = 'offline';
     throw err;
   }
+  const headers = opts.headers || (opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined);
   const res = await fetch(base + path, {
     method: opts.method || 'GET',
-    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    headers,
+    body: opts.body ? (opts.body instanceof FormData ? opts.body : JSON.stringify(opts.body)) : undefined,
     signal: AbortSignal.timeout(25000),
   });
   let data = {};
@@ -465,7 +680,7 @@ function emailFallback(extra) {
   appendMsg({
     id: 'fb-' + Date.now(),
     role: 'system',
-    text: (extra ? extra + ' ' : '') + FALLBACK,
+    text: (extra ? extra + ' ' : '') + T.fallback,
     ts: Date.now(),
     source: 'fallback',
   });
@@ -502,7 +717,7 @@ async function sendChat(text) {
       appendMsg({
         id: 'err-' + Date.now(),
         role: 'system',
-        text: err.message || FALLBACK,
+        text: err.message || T.fallback,
         ts: Date.now(),
         source: 'error',
       });
@@ -541,19 +756,149 @@ async function sendAsk(text) {
       appendMsg({
         id: uuid(),
         role: 'system',
-        text: 'Your message was sent to Hamid. You can leave this window open or come back later — his reply will appear here.',
+        text: T.askReceipt,
         ts: Date.now(),
         source: 'ask-receipt',
       });
     }
-    enterAskMode(false);
+    // Stay in handoff mode so follow-up messages still go to Hamid via /ask.
+    enterAskMode(true);
   } catch (err) {
     if (err.code === 'offline' || err.status === 503 || err.status === 502) emailFallback();
     else {
       appendMsg({
         id: 'err-' + Date.now(),
         role: 'system',
-        text: err.message || FALLBACK,
+        text: err.message || T.fallback,
+        ts: Date.now(),
+        source: 'error',
+      });
+    }
+  } finally {
+    state.sending = false;
+    $('#chatSend')?.removeAttribute('disabled');
+  }
+}
+
+async function startMeeting() {
+  enterMeetingMode(true);
+  await sendMeeting('', 'start', { pushUser: false });
+}
+
+async function sendMeeting(text, action, opts = {}) {
+  build();
+  if (state.sending) return;
+  state.sending = true;
+  $('#chatSend')?.setAttribute('disabled', 'true');
+  if (opts.pushUser !== false && text) {
+    appendMsg({
+      id: uuid(),
+      role: 'user',
+      text,
+      ts: Date.now(),
+      source: 'meeting',
+    });
+  }
+  showTyping(true);
+  try {
+    const data = await api('/meeting', {
+      method: 'POST',
+      body: {
+        visitorId: visitorId(),
+        action,
+        message: text,
+        lang: LANG,
+        page: currentPage(),
+        name: ($('#chatName')?.value || '').trim(),
+        email: ($('#chatEmail')?.value || '').trim(),
+      },
+    });
+    showTyping(false);
+    if (data.message) appendMsg(data.message);
+    else if (data.reply) {
+      appendMsg({ id: uuid(), role: 'assistant', text: data.reply, ts: Date.now(), source: 'meeting-reply' });
+    }
+    const source = data.message?.source || '';
+    if (source === 'meeting-submitted' || source === 'meeting-cancel') {
+      enterMeetingMode(false);
+    } else {
+      enterMeetingMode(true);
+    }
+  } catch (err) {
+    showTyping(false);
+    if (err.code === 'offline' || err.status === 502 || err.status === 503) emailFallback();
+    else {
+      appendMsg({
+        id: 'err-' + Date.now(),
+        role: 'system',
+        text: err.message || T.fallback,
+        ts: Date.now(),
+        source: 'error',
+      });
+    }
+  } finally {
+    state.sending = false;
+    $('#chatSend')?.removeAttribute('disabled');
+  }
+}
+
+function onFilePicked(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  state.pendingFile = file;
+  const bar = $('#chatAttachBar');
+  const name = $('#chatAttachName');
+  if (name) name.textContent = `${T.attachPicked}: ${file.name}`;
+  if (bar) bar.hidden = false;
+  $('#chatAttachNote')?.focus();
+}
+
+function clearAttach() {
+  state.pendingFile = null;
+  const bar = $('#chatAttachBar');
+  if (bar) bar.hidden = true;
+  const note = $('#chatAttachNote');
+  if (note) note.value = '';
+}
+
+async function sendUpload() {
+  const file = state.pendingFile;
+  if (!file || state.sending) return;
+  build();
+  state.sending = true;
+  $('#chatSend')?.setAttribute('disabled', 'true');
+  const note = ($('#chatAttachNote')?.value || '').trim();
+  appendMsg({
+    id: uuid(),
+    role: 'user',
+    text: `📎 ${file.name}${note ? ` — ${note}` : ''}`,
+    ts: Date.now(),
+    source: 'upload',
+  });
+  showTyping(true);
+  try {
+    const form = new FormData();
+    form.append('visitorId', visitorId());
+    form.append('file', file, file.name);
+    if (note) form.append('note', note);
+    form.append('page', currentPage());
+    form.append('lang', LANG);
+    const data = await api('/upload', { method: 'POST', body: form });
+    showTyping(false);
+    if (data.message) appendMsg(data.message);
+    else if (data.reply) {
+      appendMsg({ id: uuid(), role: 'assistant', text: data.reply, ts: Date.now(), source: 'upload-receipt' });
+    }
+    clearAttach();
+  } catch (err) {
+    showTyping(false);
+    if (err.code === 'offline' || err.status === 503 || err.status === 502) emailFallback(err.message);
+    else {
+      appendMsg({
+        id: 'err-' + Date.now(),
+        role: 'system',
+        text: err.message || T.fallback,
         ts: Date.now(),
         source: 'error',
       });
@@ -579,7 +924,7 @@ async function pollOnce() {
 
 function hasPendingAsk() {
   const msgs = state.messages;
-  const lastAsk = [...msgs].reverse().find((m) => m.role === 'user' && m.source === 'ask');
+  const lastAsk = [...msgs].reverse().find((m) => m.role === 'user' && (m.source === 'ask' || m.source === 'meeting' || m.source === 'upload'));
   if (!lastAsk) return false;
   return !msgs.some((m) => m.role === 'hamid' && Number(m.ts) > Number(lastAsk.ts));
 }
@@ -588,13 +933,12 @@ function schedulePoll() {
   clearInterval(state.pollTimer);
   state.pollTimer = null;
   if (!workerBase()) return;
-  const ms = state.open ? POLL_OPEN_MS : hasPendingAsk() ? POLL_PENDING_MS : 0;
+  const ms = state.open ? POLL_OPEN_MS : hasPendingAsk() || state.askMode ? POLL_PENDING_MS : 0;
   if (!ms) return;
   state.pollTimer = setInterval(pollOnce, ms);
 }
 
 function init() {
-  // Build the launcher immediately; the panel DOM is cheap so we can render history too.
   build();
   updateDot();
   pollOnce().then(schedulePoll);

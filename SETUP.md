@@ -219,3 +219,9 @@ If you ever need more KV writes, Cloudflare’s paid Workers plan raises the cap
 - Gemini errors: check the API key, and try setting `GEMINI_MODEL` to the current Flash model name shown in Google AI Studio.
 
 To turn the assistant off, set `WORKER_URL` back to `''` and redeploy the site, or pause the Worker in the Cloudflare dashboard.
+
+## Changing the auto-reply after “Ask Hamid directly”
+
+After a visitor messages you, the chat shows a short automatic reply from the site assistant (once per conversation). The wording lives in `ASK_AUTO_REPLY` at the **top** of `paste-this.js` (and in `src/ask-auto-reply.js`). Edit the English, Persian or Italian text, paste the file into the Worker, and deploy. You do not need to re-upload the GitHub Pages files for this change.
+
+If a later message from that visitor looks like an email or a phone number, it is forwarded to your Telegram with the heading “Contact details from visitor #v-xxxx”. Their details go only to you, never onto the public site. Your own phone number is never shown.
