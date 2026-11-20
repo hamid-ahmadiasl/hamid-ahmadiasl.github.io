@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hamid Ahmadi Asl · Mechanical Engineer &amp; AI / Computational Science Researcher</title>
+  <meta name="description" content="Hamid Ahmadi Asl — Mechanical Engineer and AI &amp; Computational Science researcher. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. CFD, wind turbines, machine learning, patents and publications.">
+  <meta name="author" content="Hamid Ahmadi Asl">
+  <meta name="theme-color" content="#060a14">
+  <link rel="canonical" href="https://hamid-ahmadiasl.github.io/">
+
+  <!-- Open Graph / social -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hamid Ahmadi Asl · Mechanical Engineer &amp; AI / Computational Science Researcher">
+  <meta property="og:description" content="MSc student in AI for Science and Technology at the University of Milano-Bicocca. Mechanical engineer working on CFD, wind turbines and machine learning for engineering systems.">
+  <meta property="og:url" content="https://hamid-ahmadiasl.github.io/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hamid Ahmadi Asl">
+  <meta name="twitter:description" content="Mechanical Engineer · AI &amp; Computational Science Researcher">
+
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%232dd4bf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%23060a14'/%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ctext x='32' y='41' font-family='Arial,sans-serif' font-size='26' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EHA%3C/text%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Three.js via ES module import map (used in js/main.js) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <a class="nav__brand" href="#top" aria-label="Hamid Ahmadi Asl — home"><span class="mono">HA</span></a>
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu"><span></span><span></span></button>
+    <nav class="nav__links" id="navLinks" aria-label="Primary">
+      <a href="#about">About</a>
+      <a href="#education">Education</a>
+      <a href="#research">Research</a>
+      <a href="#patents">Patents</a>
+      <a href="#experience">Experience</a>
+      <a href="#skills">Skills</a>
+      <a href="#honors">Honors</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <canvas id="scene" class="hero__canvas" aria-hidden="true"></canvas>
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__inner">
+      <!-- PHOTO: to add a photo later, save it as assets/photo.jpg and replace the
+           <div class="monogram"> below with:
+           <img class="monogram monogram--photo" src="assets/photo.jpg" alt="Portrait of Hamid Ahmadi Asl" width="112" height="112"> -->
+      <div class="monogram hero-anim" aria-hidden="true"><span>HA</span></div>
+      <p class="eyebrow hero-anim">Hello, I’m</p>
+      <h1 class="hero__name hero-anim">Hamid <span class="grad">Ahmadi Asl</span></h1>
+      <p class="hero__title hero-anim">Mechanical Engineer <span class="dot">·</span> AI &amp; Computational Science Researcher</p>
+      <p class="hero__lead hero-anim">MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca, applying AI and computational methods to engineering systems.</p>
+      <div class="hero__cta hero-anim">
+        <a class="btn btn--primary" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3Zm-6 9.2v4.3C6 18.4 8.7 20 12 20s6-1.6 6-3.5v-4.3l-6 3.3-6-3.3Z"/></svg>
+          Google Scholar
+        </a>
+        <a class="btn" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.8v1.6h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6V21h-4v-5c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.700V21h-4V9.750Z"/></svg>
+          LinkedIn
+        </a>
+        <a class="btn" href="https://github.com/hamid-ahmadiasl" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn" href="mailto:hmd.ahmadiasl@gmail.com">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L4.6 7H4v.6l8 5.6 8-5.600V7h-.6L12 12.200Z"/></svg>
+          Email
+        </a>
+      </div>
+    </div>
+    <a class="hero__scroll" href="#about" aria-label="Scroll to About"><span></span></a>
+  </section>
+
+  <main id="main">
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">01 — About</p>
+          <h2>Profile summary</h2>
+        </header>
+        <div class="about">
+          <div class="about__text reveal">
+            <p>Mechanical Engineer with years of experience in R&amp;D and industrial projects. Skilled in analyzing technical requirements and translating them into practical engineering solutions. Currently focusing on applying AI and computational methods to engineering systems.</p>
+            <p>Experienced as a Project Sub-Leader (PSL), Design Engineer, and coordinating interdisciplinary teams. Proven track record of developing innovative concepts, securing patents, and publishing research on mechanical systems.</p>
+            <p>Highly interested in groundbreaking research across science and engineering, and dedicated to bridging technical expertise and project objectives to deliver successful results.</p>
+          </div>
+          <ul class="stats reveal" aria-label="At a glance">
+            <li class="card"><span class="stat" data-count="3">0</span><span class="stat__label">Degrees</span></li>
+            <li class="card"><span class="stat" data-count="7">0</span><span class="stat__label">Journal papers</span></li>
+            <li class="card"><span class="stat" data-count="2">0</span><span class="stat__label">Patents</span></li>
+            <li class="card"><span class="stat" data-count="1">0</span><span class="stat__label">Published book</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDUCATION -->
+    <section class="section" id="education">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">02 — Education</p>
+          <h2>Academic background</h2>
+        </header>
+        <ol class="timeline">
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2025 – Now</span>
+            <div class="card">
+              <h3>Master of Artificial Intelligence for Science and Technology</h3>
+              <p class="muted">Department of Physics “Giuseppe Occhialini”, University of Milano-Bicocca, Milan, Italy.</p>
+              <span class="badge badge--now">In progress</span>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2013 – 2016</span>
+            <div class="card">
+              <h3>Master of Science in Mechanical Engineering — Energy Conversion</h3>
+              <p class="muted">Department of Mechanical Engineering, South Tehran Branch, IAU, Tehran, Iran.</p>
+              <a class="link" href="https://drive.google.com/file/d/1IffsVkNdrP3oeBr2TSejqB2YB0RwIoEG/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2006 – 2012</span>
+            <div class="card">
+              <h3>Bachelor of Science in Mechanical Engineering — Heat and Fluids</h3>
+              <p class="muted">Department of Mechanical Engineering, South Tehran Branch, IAU, Tehran, Iran.</p>
+              <a class="link" href="https://drive.google.com/file/d/1gzXEG5Fx3uSOBaFm47cm6jGSWsxyRyV9/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- RESEARCH -->
+    <section class="section" id="research">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">03 — Research &amp; Publications</p>
+          <h2>Papers and book</h2>
+          <p class="section__sub">Also listed on <a class="link" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">Google Scholar <span aria-hidden="true">↗</span></a></p>
+        </header>
+
+        <h3 class="subhead reveal">Papers</h3>
+        <ul class="pubs">
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--accepted">Accepted</span><span class="muted">26 September 2026</span></div>
+            <h4>Data Quality and Generalization Reliability of Small-Sample Machine-Learning Surrogates: A CFD-Based Savonius Wind-Turbine Case Study</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong> &amp; Reihaneh Azad</p>
+            <p class="pub__venue">Artificial Intelligence and Knowledge Representation</p>
+            <a class="link" href="https://drive.google.com/file/d/1A5M1xOQxR9v7wH1vqclofKwY5QEFdNn1/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--review">Under review</span><span class="muted">2026</span></div>
+            <h4>Quantifying the Effects of Experimental Data Quality on Machine-Learning Reconstruction of Wind-Tunnel Velocity Fields</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong> &amp; R. Azad</p>
+            <p class="pub__venue">Experimental Techniques · Manuscript No. EXTE-D-26-00330</p>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--review">Under review</span><span class="muted">2026</span></div>
+            <h4>Experimental Evaluation of a Simplified Flow-Conditioning System for Improving Flow Uniformity in an Open-Circuit Blower Wind Tunnel</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong>, R. Kamali Monfared &amp; H. Ahmadi-Danesh-Ashtiani</p>
+            <p class="pub__venue">Flow Measurement and Instrumentation · ID FLOWMEASINST-D-26-00753</p>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--review">Under revision</span><span class="muted">2026</span></div>
+            <h4>CFD-Based Design-Space Analysis of Deflector Parameters for Driving-Side Flow Control in a Savonius Wind Turbine Using Design of Experiments and Response Surface Methodology</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong>, K. Farshneshani &amp; P. Soleimani</p>
+            <p class="pub__venue">Wind Engineering · ID WIE-26-0273.R1</p>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--published">Published</span><span class="muted">2017</span></div>
+            <h4>Experimental investigation of blade number and design effects for a ducted wind turbine</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong>, R. Kamali Monfared &amp; M. Rad</p>
+            <p class="pub__venue">Renewable Energy, Vol. 105, pp. 334–343</p>
+            <a class="link" href="https://www.sciencedirect.com/science/article/abs/pii/S0960148116311387" target="_blank" rel="noopener noreferrer">ScienceDirect <span aria-hidden="true">↗</span></a>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--published">Published</span><span class="muted">2017</span></div>
+            <h4>Numerical and experimental investigation of shroud effects of a ducted turbine on upwind and downwind flows</h4>
+            <p class="pub__authors"><strong>Hamid Ahmadi Asl</strong>, R. Kamali Monfared &amp; M. Rad</p>
+            <p class="pub__venue">Journal of Marine Engineering, Vol. 13, pp. 65–73</p>
+            <a class="link" href="https://marine-eng.ir/article-1-509-en.html" target="_blank" rel="noopener noreferrer">Journal page <span aria-hidden="true">↗</span></a>
+          </li>
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--published">Published</span><span class="muted">2016</span></div>
+            <h4>Designing and building of a shroud to increase fluid velocity with capability to use for axial water turbines</h4>
+            <p class="pub__authors">R. Kamali Monfared, <strong>Hamid Ahmadi Asl</strong> &amp; M. Rad</p>
+            <p class="pub__venue">Journal of Marine Engineering, Vol. 12, pp. 37–44</p>
+            <a class="link" href="http://marine-eng.ir/article-1-456-en.html" target="_blank" rel="noopener noreferrer">Journal page <span aria-hidden="true">↗</span></a>
+          </li>
+        </ul>
+
+        <h3 class="subhead reveal">Book</h3>
+        <ul class="pubs">
+          <li class="pub card reveal">
+            <div class="pub__meta"><span class="badge badge--published">Published</span><span class="muted">2016</span></div>
+            <h4>Numerical Simulation: Design and Grid Generation (Comprehensive Training of ICEM CFD)</h4>
+            <p class="pub__authors">M. Rad, S. Salavati Dezfouli, <strong>Hamid Ahmadi Asl</strong> &amp; R. Kamali Monfared</p>
+            <p class="pub__venue">Azad University – South Tehran Branch · ISBN 978-964-10-3841-2</p>
+            <a class="link" href="https://drive.google.com/file/d/1xmWulegPyAUopyjMeYPsbCXtcdQDf2Sj/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PATENTS -->
+    <section class="section" id="patents">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">04 — Patents</p>
+          <h2>Patented in Iran</h2>
+        </header>
+        <div class="grid grid--2">
+          <article class="card card--hover reveal">
+            <span class="badge badge--published">Patent No. 88118</span>
+            <h3>Increasing wind velocity duct to use for wind turbine</h3>
+            <p class="muted">Patented in Iran</p>
+            <a class="link" href="https://drive.google.com/file/d/1ca7hcsIwCdYJQvGCQ_ixvETIIfK3SNn3/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="card card--hover reveal">
+            <span class="badge badge--published">Patent No. 90865</span>
+            <h3>Open-circuit blower wind tunnel with vibrating baffles</h3>
+            <p class="muted">Patented in Iran</p>
+            <a class="link" href="https://drive.google.com/file/d/129pVpgr5g8MnKAa90RDwevM5xe2EUNG6/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="section" id="experience">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">05 — Experience</p>
+          <h2>Professional experience</h2>
+        </header>
+        <ol class="timeline">
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2026 – Now</span>
+            <div class="card">
+              <h3>AI Training Contributor</h3>
+              <p class="company">Alignerr <span class="tag">AI</span></p>
+              <p class="muted">AI annotation; engineering-focused AI training and evaluation.</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2024 – 2025</span>
+            <div class="card">
+              <h3>Project Sub-Leader (PSL)</h3>
+              <p class="company">Sazeh Consultants <span class="tag">Industry</span></p>
+              <p class="muted">Vendor communication; engineering problem-solving; meeting leadership and reporting.</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2022 – 2024</span>
+            <div class="card">
+              <h3>Design Engineer</h3>
+              <p class="company">Sazeh Consultants <span class="tag">Industry</span></p>
+              <p class="muted">Mechanical design of static equipment; preparing MR; Vendor Document Review (VDR).</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2020 – 2022</span>
+            <div class="card">
+              <h3>Modeling and Simulation</h3>
+              <p class="company">Freelance <span class="tag">R&amp;D and Industry</span></p>
+              <p class="muted">Numerical simulation and modeling across multiple projects.</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2019 – 2020</span>
+            <div class="card">
+              <h3>Simulation &amp; Optimization</h3>
+              <p class="company">Dehkdeh Nik Modern <span class="tag">R&amp;D and Industry</span></p>
+              <p class="muted">Numerical simulation and modeling; innovative design development.</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2017 – 2019</span>
+            <div class="card">
+              <h3>Modeling and Simulation</h3>
+              <p class="company">Freelance <span class="tag">R&amp;D</span></p>
+              <p class="muted">Project-based numerical simulation and modeling.</p>
+            </div>
+          </li>
+          <li class="timeline__item reveal">
+            <span class="timeline__years">2012 – 2017</span>
+            <div class="card">
+              <h3>Mechanical Engineer</h3>
+              <p class="company">Fidar Gostaran Apadana <span class="tag">R&amp;D</span></p>
+              <p class="muted">Mechanical calculation, simulation &amp; design evaluation; interface with R&amp;D partners.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section" id="skills">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">06 — Skills</p>
+          <h2>Technical skills</h2>
+        </header>
+        <div class="grid grid--3">
+          <article class="card card--hover reveal">
+            <h3>Programming &amp; Scientific Computing</h3>
+            <ul class="chips"><li>Python</li><li>NumPy</li><li>SimPy</li><li>Pandas</li><li>Matplotlib</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Machine Learning &amp; Deep Learning</h3>
+            <ul class="chips"><li>Scikit-learn</li><li>PyTorch</li><li>Supervised Learning</li><li>Regression</li><li>Classification</li><li>Model Evaluation</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Data &amp; AI</h3>
+            <ul class="chips"><li>Data Analysis</li><li>Machine Learning</li><li>AI for Engineering Applications</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>High-Performance Computing</h3>
+            <ul class="chips"><li>HPC</li><li>MPI</li><li>OpenMP</li><li>Parallel Computing</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Computational Engineering</h3>
+            <ul class="chips"><li>CFD</li><li>ANSYS Fluent</li><li>ICEM CFD</li><li>Numerical Simulation</li><li>Design Optimization</li></ul>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Engineering</h3>
+            <ul class="chips"><li>Mechanical Design</li><li>Stationary Equipment</li><li>Vendor Document Review (VDR)</li><li>Material Requisition (MR)</li></ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- HONORS -->
+    <section class="section" id="honors">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">07 — Honors &amp; Awards</p>
+          <h2>Recognition</h2>
+        </header>
+        <ul class="honors">
+          <li class="card card--hover reveal">
+            <span class="honors__icon" aria-hidden="true">★</span>
+            <div>
+              <p>Accreditation and scoring for commercialization of the patented ducted wind turbine by the “Scientific and Industrial Research Organization of Iran; Ministry of Science, Research and Technology”.</p>
+              <a class="link" href="https://drive.google.com/file/d/1Frs5xNoRcG-92NlFCKhwUpDcqrMAy7sH/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+          <li class="card card--hover reveal">
+            <span class="honors__icon" aria-hidden="true">★</span>
+            <div>
+              <p>Rewarded for the Best Paper of the year by South Tehran Branch, Azad University.</p>
+              <a class="link" href="https://drive.google.com/file/d/1SrZJFeyRPnj1IJfWbp0FDyvausBzxSbk/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+          <li class="card card--hover reveal">
+            <span class="honors__icon" aria-hidden="true">★</span>
+            <div>
+              <p>The Regional Selection of the Sixth Khwarizmi Youth Awards.</p>
+              <a class="link" href="https://drive.google.com/file/d/1JCJWVPdCuCC6oNVRT4EsljgoyIyHA_2S/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+        </ul>
+
+        <header class="section__head section__head--sub reveal" id="languages">
+          <p class="eyebrow">Languages</p>
+          <h2>Language proficiency</h2>
+        </header>
+        <div class="grid grid--2">
+          <article class="card card--hover reveal">
+            <h3>English</h3>
+            <p class="muted">Overall band score: 7.0 · exam date 24 Oct 2024</p>
+            <a class="link" href="https://drive.google.com/file/d/1bBJAlTU_nBPaVxbW81sdn-YZHPj_QFDo/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="card card--hover reveal">
+            <h3>Italian</h3>
+            <p class="muted">A1 · currently learning at A2 level</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section section--contact" id="contact">
+      <div class="wrap">
+        <div class="contact card reveal">
+          <p class="eyebrow">08 — Contact</p>
+          <h2>Let’s connect</h2>
+          <p class="muted">Interested in research across science and engineering — feel free to get in touch.</p>
+          <a class="contact__mail" href="mailto:hmd.ahmadiasl@gmail.com">hmd.ahmadiasl@gmail.com</a>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="mailto:hmd.ahmadiasl@gmail.com">Send an email</a>
+            <a class="btn" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <a class="btn" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">Google Scholar</a>
+            <a class="btn" href="https://github.com/hamid-ahmadiasl" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year">2026</span> Hamid Ahmadi Asl</p>
+    <a href="#top">Back to top ↑</a>
+  </footer>
+
+  <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
