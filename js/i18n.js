@@ -160,10 +160,6 @@
   add("hero.title", "AI & Computational Science Researcher with a Mechanical Engineering Background", "پژوهشگر هوش مصنوعی و علوم محاسباتی با پیش‌زمینه‌ی مهندسی مکانیک", "Ricercatore in intelligenza artificiale e scienza computazionale, con una formazione in ingegneria meccanica");
   add("hero.lead", "Bridging engineering knowledge and artificial intelligence to develop practical solutions for complex real-world problems. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca.", "پیوند دانش مهندسی و هوش مصنوعی برای توسعه‌ی راه‌حل‌های کاربردی در مسئله‌های پیچیده و واقعی. دانشجوی کارشناسی ارشد هوش مصنوعی برای علم و فناوری در دانشگاه میلانو-بیکوکا.", "Unisco conoscenze di ingegneria e intelligenza artificiale per sviluppare soluzioni pratiche a problemi reali complessi. Sono studente della laurea magistrale in Artificial Intelligence for Science and Technology presso l’Università degli Studi di Milano-Bicocca.");
   add("hero.quote", "“What excites me most is working on research where physics, engineering and artificial intelligence come together.”", "«آنچه بیش از همه برایم هیجان‌انگیز است، کار روی پژوهشی است که در آن فیزیک، مهندسی و هوش مصنوعی به هم می‌رسند.»", "«Quello che mi appassiona di più è lavorare a una ricerca in cui fisica, ingegneria e intelligenza artificiale si incontrano.»");
-  add("hero.legend", "neural wind → stream → rotor", "باد عصبی ← جریان ← روتور", "vento neurale → flusso → rotore");
-  add("hero.label.pinn", "Physics-informed NN", "شبکه‌ی عصبی آگاه از فیزیک", "Rete neurale informata dalla fisica");
-  add("hero.label.surrogate", "surrogate model", "مدل جانشین", "modello surrogato");
-  add("hero.label.twin", "digital twin", "دوقلوی دیجیتال", "digital twin");
   add("cta.scholar", "Google Scholar", "Google Scholar", "Google Scholar");
   add("cta.linkedin", "LinkedIn", "LinkedIn", "LinkedIn");
   add("cta.github", "GitHub", "GitHub", "GitHub");
@@ -378,10 +374,6 @@
     "hero.title": "Tutkija tekoälyn ja laskennallisen tieteen parissa, taustana konetekniikka",
     "hero.lead": "Yhdistän insinööritietoa ja tekoälyä käytännön ratkaisuihin monimutkaisissa, todellisissa ongelmissa. Opiskelen maisteriksi Artificial Intelligence for Science and Technology -ohjelmassa Università degli Studi di Milano-Bicoccassa.",
     "hero.quote": "“Minua innostaa eniten tutkimus, jossa fysiikka, insinööritiede ja tekoäly kohtaavat.”",
-    "hero.legend": "neuraalinen tuuli → virtaus → roottori",
-    "hero.label.pinn": "Fysiikkatietoinen NN",
-    "hero.label.surrogate": "sijaismalli",
-    "hero.label.twin": "digitaalinen kaksonen",
     "cta.scholar": "Google Scholar",
     "cta.linkedin": "LinkedIn",
     "cta.github": "GitHub",

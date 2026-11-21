@@ -1,9 +1,15 @@
 /* Hero scene: the neural network IS the wind that drives the turbine.
-   Layers of nodes span the hero left → right; connections are smooth CFD-like
+   Layers of nodes span the hero left → right and continue in the wake, behind
+   the rotor (subtle pink/violet output layers). Connections are smooth CFD-like
    streamlines (bezier / Catmull-Rom), not straight edges. Signal pulses and a
-   mix of thin glowing lines + 0/1 glyphs travel those curves, converge around
-   the rotor on the right, and visibly drive its rotation. Gusts are activation
-   bursts that propagate layer by layer. No solid output block.
+   mix of thin glowing lines + 0/1 glyphs travel those curves, wrap through the
+   rotor, and feed the wake layers. Bypass streamlines curve above and below the
+   disc (exactly two above and two below). One extra wake layer sits behind
+   the rotor on desktop (three in total; two on mobile). In Persian the stage
+   is mirrored in X (flow right→left, turbine on the left, input on the right)
+   via stage.scale.x; 0/1 glyph UVs are un-flipped so digits stay readable.
+   Gusts are activation bursts that propagate layer by layer.
+   No solid output block.
    URL flags: ?streams=mixed|glyphs|lines  ?noadapt  ?gust=1 (hold a mid-gust). */
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -54,9 +60,22 @@ export async function initHero({ reduceMotion, isSmall }) {
   const palAt = (t, o) => { t = clamp(t, 0, 1); const f = t * (pal.length - 1), i = Math.min(pal.length - 2, Math.floor(f)), u = f - i;
     for (let c = 0; c < 3; c++) o[c] = pal[i][c] + (pal[i + 1][c] - pal[i][c]) * u; return o; };
 
-  /* Dim the field behind the left text column (desktop). Mobile text sits under the CSS glow. */
-  let zoneA = -2.2, zoneB = 0.85;
-  const zoneK = x => isSmall ? 1 : (0.24 + 0.76 * smooth(zoneA, zoneB, x));
+  /* Dim the field behind the typography column (desktop). Mobile text sits under the CSS glow.
+     LTR: fade on the left (name). RTL desktop: fade on the right, where the name meets the rotor. */
+  let zoneA = -2.2, zoneB = 0.85, dimRight = false;
+  const zoneK = x => {
+    if (isSmall) return 1;
+    if (dimRight) return 0.22 + 0.78 * (1 - smooth(1.7, 4.7, x));
+    return 0.22 + 0.78 * smooth(zoneA, zoneB, x);
+  };
+  let flipX = 1;
+  const syncDim = () => {
+    const rtl = document.documentElement.getAttribute('dir') === 'rtl';
+    dimRight = !isSmall && W >= 1024 && rtl;
+    flipX = rtl ? -1 : 1;
+    if (ribMat && ribMat.uniforms && ribMat.uniforms.uFlip) ribMat.uniforms.uFlip.value = flipX;
+  };
+  const applyStageScale = (s) => { stage.scale.set(s * flipX, s, s); };
 
   /* ===== Glyph atlas (0/1) — instanced screen-space quads along a trail ===== */
   function makeGlyphAtlas() {
@@ -81,7 +100,7 @@ export async function initHero({ reduceMotion, isSmall }) {
   }
   const glyphAtlas = makeGlyphAtlas();
 
-  let N = isSmall ? 56 : 110;
+  let N = isSmall ? 66 : 128;
   const K = isSmall ? 14 : 18;
   const P = {
     path: new Int16Array(N), s: new Float32Array(N), age: new Float32Array(N),
@@ -108,10 +127,11 @@ export async function initHero({ reduceMotion, isSmall }) {
     uniforms: {
       uRes: { value: new THREE.Vector2(1, 1) },
       uPx: { value: isSmall ? 7.2 : 8.6 },
-      uAtlas: { value: glyphAtlas }
+      uAtlas: { value: glyphAtlas },
+      uFlip: { value: 1 }
     },
     vertexShader: `attribute vec3 iA; attribute vec3 iB; attribute vec3 cA; attribute float aBit;
-      uniform vec2 uRes; uniform float uPx; varying vec2 vUv; varying vec3 vC;
+      uniform vec2 uRes; uniform float uPx; uniform float uFlip; varying vec2 vUv; varying vec3 vC;
       void main(){
         float mA=max(cA.r,max(cA.g,cA.b));
         if(mA < 1e-4){ gl_Position=vec4(2.,2.,2.,1.); vC=vec3(0.); vUv=vec2(0.); return; }
@@ -122,7 +142,9 @@ export async function initHero({ reduceMotion, isSmall }) {
         vec2 nn = vec2(-tn.y, tn.x);
         a.xy += (tn*position.x*uPx + nn*position.y*uPx*0.82)/uRes*a.w;
         gl_Position=a;
-        vUv=vec2(aBit*0.5 + (position.x*0.5+0.5)*0.5, position.y*0.5+0.5);
+        float ux=position.x*0.5+0.5, uy=position.y*0.5+0.5;
+        if(uFlip<0.0){ ux=1.0-ux; uy=1.0-uy; }
+        vUv=vec2(aBit*0.5 + ux*0.5, uy);
         vC=cA;
       }`,
     fragmentShader: `uniform sampler2D uAtlas; varying vec2 vUv; varying vec3 vC;
@@ -225,37 +247,56 @@ export async function initHero({ reduceMotion, isSmall }) {
   nacelleHalo.renderOrder = 9;
   turb.add(nacelleHalo);
 
-  /* ===== Network: layers of nodes across the hero. The rotor is the sink they converge into. ===== */
-  const layers = isSmall ? [4, 5, 3] : [4, 6, 5, 4];
+  /* ===== Network: upstream layers feed the rotor; 1–2 subtle output layers sit in the wake. ===== */
+  const layersUp = isSmall ? [4, 5, 3] : [4, 6, 5, 4];
+  const layersDown = isSmall ? [3, 3] : [4, 4, 3];
+  const layers = layersUp.concat(layersDown);
+  const nUp = layersUp.length, nDown = layersDown.length;
   const nLayers = layers.length;
+  const nStat = nUp + 1 + nDown;                            // upstream + rotor + wake
   const layerIndex = [];
   const nodes = [], nCol = [], coreR = [], nPh = [], nLayer = [];
   for (let li = 0; li < nLayers; li++) {
     layerIndex.push(nodes.length);
     const n = layers[li];
-    palAt(li / Math.max(1, nLayers - 1), rgb);
+    const down = li >= nUp;
+    palAt(down ? 0.78 + 0.22 * ((li - nUp) / Math.max(1, nDown - 1)) : (li / Math.max(1, nUp - 1)) * 0.72, rgb);
     for (let j = 0; j < n; j++) {
       nodes.push(new THREE.Vector3());
       nCol.push(rgb.slice());
-      coreR.push(li === 0 ? 0.07 : li === nLayers - 1 ? 0.08 : 0.062);
+      coreR.push(li === 0 ? 0.07 : down ? 0.05 : 0.062);
       nPh.push(rnd() * 6.28);
       nLayer.push(li);
     }
   }
   const NN = nodes.length;
-  const layerAct = new Float32Array(nLayers + 1);           // last slot = rotor arrival
+  const layerAct = new Float32Array(nStat);
+  const actOf = li => layerAct[li < nUp ? li : li + 1];
 
-  function placeNetwork(x0, x1, h0) {
-    for (let li = 0; li < nLayers; li++) {
-      const u = li / Math.max(1, nLayers - 1);
-      // slightly more space on the left, tighter as streams converge
-      const x = lerp(x0, x1, u * u * 0.18 + u * 0.82);
+  function placeNetwork(x0, xIn, h0, xW0, xW1, hW) {
+    for (let li = 0; li < nUp; li++) {
+      const u = nUp === 1 ? 0 : li / (nUp - 1);
+      const x = lerp(x0, xIn, u * u * 0.18 + u * 0.82);
       const h = lerp(h0, h0 * 0.58, u);
       const n = layers[li], a0 = layerIndex[li];
-      palAt(u, rgb);
+      palAt(u * 0.72, rgb);
       for (let j = 0; j < n; j++) {
         const y = (j - (n - 1) / 2) * (h / Math.max(1, n - 1));
         const z = ((li % 2) ? 0.16 : -0.14) + (j % 2 ? 0.07 : -0.06) + (j - (n - 1) / 2) * 0.03;
+        nodes[a0 + j].set(x, y, z);
+        nCol[a0 + j] = rgb.slice();
+      }
+    }
+    for (let k = 0; k < nDown; k++) {
+      const li = nUp + k;
+      const u = nDown === 1 ? 1 : k / (nDown - 1);
+      const x = lerp(xW0, xW1, u);
+      const h = lerp(hW, hW * 0.88, u);
+      const n = layers[li], a0 = layerIndex[li];
+      palAt(0.78 + 0.22 * u, rgb);
+      for (let j = 0; j < n; j++) {
+        const y = (j - (n - 1) / 2) * (h / Math.max(1, n - 1));
+        const z = ((k % 2) ? -0.12 : 0.14) + (j % 2 ? 0.05 : -0.05);
         nodes[a0 + j].set(x, y, z);
         nCol[a0 + j] = rgb.slice();
       }
@@ -274,22 +315,22 @@ export async function initHero({ reduceMotion, isSmall }) {
   const pairs = [];
   function buildPairs() {
     pairs.length = 0;
-    for (let li = 0; li < nLayers - 1; li++) {
+    const linkAdj = (li) => {
       const a0 = layerIndex[li], aN = layers[li], b0 = layerIndex[li + 1], bN = layers[li + 1];
       for (let i = 0; i < aN; i++) {
-        // two or three destinations of similar height — airy, not a fully-connected hairball
         const t = aN === 1 ? 0.5 : i / (aN - 1);
         const j0 = Math.round(t * (bN - 1));
         const set = new Set([j0, clamp(j0 - 1, 0, bN - 1), clamp(j0 + 1, 0, bN - 1)]);
         if (bN > 3 && i % 2 === 0) set.add((j0 + 2) % bN);
         for (const j of set) pairs.push([a0 + i, b0 + j, li]);
       }
-    }
-    // a few long skip links
+    };
+    for (let li = 0; li < nUp - 1; li++) linkAdj(li);
+    for (let li = nUp; li < nLayers - 1; li++) linkAdj(li);
     const skips = isSmall ? 3 : 5;
-    for (let k = 0; k < skips && nLayers >= 3; k++) {
-      const la = k % (nLayers - 2), lb = la + 2;
-      pairs.push([layerIndex[la] + (k % layers[la]), layerIndex[lb] + ((k * 2 + 1) % layers[lb]), la]);
+    for (let k = 0; k < skips && nUp >= 3; k++) {
+      const la = k % (nUp - 2), lb = la + 2;
+      if (lb < nUp) pairs.push([layerIndex[la] + (k % layers[la]), layerIndex[lb] + ((k * 2 + 1) % layers[lb]), la]);
     }
   }
   buildPairs();
@@ -368,18 +409,30 @@ export async function initHero({ reduceMotion, isSmall }) {
       const base = 0.22 + 0.06 * (li === 0 ? 0 : 1);
       for (let i = 0; i < tmp.length - 1; i++) pushSeg(tmp[i], tmp[i + 1], base, base);
     }
-    // drive curves: last layer → wrap / enter the rotor
-    const last0 = layerIndex[nLayers - 1], lastN = layers[nLayers - 1];
+    // drive + wake: last upstream layer → through the rotor → first output layer
+    const last0 = layerIndex[nUp - 1], lastN = layers[nUp - 1];
+    const out0 = layerIndex[nUp], outN = layers[nUp];
     for (let j = 0; j < lastN; j++) {
       for (let arm = 0; arm < 2; arm++) {
-        const wps = driveWaypoints(nodes[last0 + j], j, arm);
+        const dest = nodes[out0 + ((j + arm) % outN)];
+        const wps = driveWaypoints(nodes[last0 + j], j, arm, dest);
         const samp = [];
-        for (let i = 0; i <= 24; i++) samp.push(crPoint(wps, i / 24, new THREE.Vector3()).clone());
+        for (let i = 0; i <= 28; i++) samp.push(crPoint(wps, i / 28, new THREE.Vector3()).clone());
         for (let i = 0; i < samp.length - 1; i++) {
-          const fadeOut = 1 - smooth(0.72, 1, i / (samp.length - 1));
-          pushSeg(samp[i], samp[i + 1], 0.38 * fadeOut, 0.38 * fadeOut);
+          const u = i / (samp.length - 1);
+          const k = 0.36 * (0.7 + 0.45 * Math.sin(Math.PI * u));
+          pushSeg(samp[i], samp[i + 1], k, k);
         }
       }
+    }
+    // faint persistent bypass curves above and below the disc
+    const nByL = 4;
+    for (let b = 0; b < nByL; b++) {
+      const wps = bypassWaypoints(b, b < nByL / 2 ? 1 : -1);
+      const samp = [];
+      for (let i = 0; i <= 20; i++) samp.push(crPoint(wps, i / 20, new THREE.Vector3()).clone());
+      const base = 0.2 + 0.04 * (b % 3);
+      for (let i = 0; i < samp.length - 1; i++) pushSeg(samp[i], samp[i + 1], base, base);
     }
     nLinkUsed = s / 3;
     linkGeo.setDrawRange(0, nLinkUsed);
@@ -387,8 +440,8 @@ export async function initHero({ reduceMotion, isSmall }) {
     linkGeo.attributes.color.needsUpdate = true;
   }
 
-  function driveWaypoints(src, j, arm) {
-    const ang = (j / Math.max(1, layers[nLayers - 1]) + arm * 0.17) * Math.PI * 2;
+  function driveWaypoints(src, j, arm, dest) {
+    const ang = (j / Math.max(1, layers[nUp - 1]) + arm * 0.17) * Math.PI * 2;
     const rIn = arm === 0 ? 0.42 + (j % 3) * 0.12 : 0.92 + (j % 2) * 0.1;
     const swirl = arm === 0 ? 0.55 : 0.9;
     const a0 = ang, a1 = ang + swirl * 0.55, a2 = ang + swirl * 1.05;
@@ -397,13 +450,35 @@ export async function initHero({ reduceMotion, isSmall }) {
     mid.y = lerp(src.y, mid.y, 0.7); mid.z = lerp(src.z, mid.z, 0.7);
     const pA = new THREE.Vector3(); rotPt(XR - 0.15, Math.cos(a1) * rIn, Math.sin(a1) * rIn, pA);
     const pB = new THREE.Vector3(); rotPt(XR + 0.35, Math.cos(a2) * (rIn * (arm === 0 ? 0.7 : 1.08)), Math.sin(a2) * (rIn * (arm === 0 ? 0.7 : 1.08)), pB);
-    const pC = new THREE.Vector3(); rotPt(XR + 0.95, Math.cos(a2 + 0.25) * rIn * 0.85, Math.sin(a2 + 0.25) * rIn * 0.85, pC);
-    return [p0, mid, pA, pB, pC];
+    const pC = new THREE.Vector3(); rotPt(XR + 0.85, Math.cos(a2 + 0.25) * rIn * 0.75, Math.sin(a2 + 0.25) * rIn * 0.75, pC);
+    const pts = [p0, mid, pA, pB, pC];
+    if (dest) pts.push(dest.clone());
+    return pts;
+  }
+
+  function bypassWaypoints(s, side) {
+    const half = 2;
+    const k = s % half;
+    const rotor = new THREE.Vector3(); rotPt(XR, 0, 0, rotor);
+    const R = 1.08 * (turb.scale.x || 1);
+    const yPass = side * (R + 0.38 + k * 0.34);
+    const z = ((k % 2) ? 0.14 : -0.14);
+    const x0 = lerp(nodes[0].x, rotor.x, 0.42 + k * 0.04);
+    const x1 = (nodes[NN - 1] ? nodes[NN - 1].x : rotor.x + 1.15) + 0.12;
+    const y0 = side * (0.88 + k * 0.28);
+    const y1 = side * (0.84 + k * 0.24);
+    return [
+      new THREE.Vector3(x0, y0, z),
+      new THREE.Vector3(lerp(x0, rotor.x, 0.5), lerp(y0, yPass, 0.6), z * 0.9),
+      new THREE.Vector3(rotor.x - 0.12, yPass, z),
+      new THREE.Vector3(rotor.x + 0.42, yPass * 1.07, z * 0.8),
+      new THREE.Vector3(x1, y1, z * 0.65)
+    ];
   }
 
   function storyU(x) {
     const tMin = nodes[0] ? nodes[0].x - 1.2 : -4;
-    const tMax = turb.position.x + 0.4;
+    const tMax = (nodes[NN - 1] ? nodes[NN - 1].x : turb.position.x) + 0.25;
     return clamp((x - tMin) / Math.max(0.01, tMax - tMin), 0, 1);
   }
 
@@ -461,7 +536,8 @@ export async function initHero({ reduceMotion, isSmall }) {
   function buildPaths() {
     PATHS.length = 0;
     const nMain = isSmall ? 18 : 28;
-    const nDeep = isSmall ? 5 : 8;
+    const nDeep = isSmall ? 4 : 6;
+    const nBy = 4;
     const make = (wps, dim, glyph) => {
       const m = isSmall ? 28 : 36;
       const pts = [];
@@ -475,9 +551,8 @@ export async function initHero({ reduceMotion, isSmall }) {
       const zJ = ((s % 4) - 1.5) * 0.18;
       wps.push(new THREE.Vector3(inletX, yJ, zJ));
       let y = yJ, z = zJ;
-      for (let li = 0; li < nLayers; li++) {
+      for (let li = 0; li < nUp; li++) {
         const a0 = layerIndex[li], n = layers[li];
-        // node of similar height, with a small neighbour wander
         let best = 0, bestD = 1e9;
         for (let j = 0; j < n; j++) { const d = Math.abs(nodes[a0 + j].y - y); if (d < bestD) { bestD = d; best = j; } }
         if (s % 3 === li % 3) best = clamp(best + (s % 2 ? 1 : -1), 0, n - 1);
@@ -487,9 +562,28 @@ export async function initHero({ reduceMotion, isSmall }) {
         y = nd.y; z = nd.z;
       }
       const arm = s % 2;
-      const dwp = driveWaypoints(wps[wps.length - 1], s % layers[nLayers - 1], arm);
+      let dest = null;
+      if (nDown) {
+        const a0 = layerIndex[nUp], n = layers[nUp];
+        dest = nodes[a0 + (s % n)];
+      }
+      const dwp = driveWaypoints(wps[wps.length - 1], s % layers[nUp - 1], arm, dest);
       for (let k = 1; k < dwp.length; k++) wps.push(dwp[k]);
+      for (let li = nUp + 1; li < nLayers; li++) {
+        const a0 = layerIndex[li], n = layers[li];
+        let best = 0, bestD = 1e9;
+        const yRef = wps[wps.length - 1].y;
+        for (let j = 0; j < n; j++) { const d = Math.abs(nodes[a0 + j].y - yRef); if (d < bestD) { bestD = d; best = j; } }
+        const nd = nodes[a0 + best];
+        wps.push(new THREE.Vector3(nd.x, nd.y, nd.z));
+      }
       make(wps, s % 5 === 0 ? 0.55 : 1, s % 3 !== 2);
+    }
+    // CFD-style bypass: curve above and below the rotor disc
+    for (let s = 0; s < nBy; s++) {
+      const side = s < nBy / 2 ? 1 : -1;
+      const wps = bypassWaypoints(s, side);
+      make(wps, 0.62 + (s % 2) * 0.1, true);
     }
     // deeper, dimmer parallax streams
     for (let s = 0; s < nDeep; s++) {
@@ -535,12 +629,12 @@ export async function initHero({ reduceMotion, isSmall }) {
 
   const trailTmp = new THREE.Vector3();
   function stepParticles(dt) {
-    const boost = 1 + 0.85 * gust + 0.55 * layerAct[nLayers];
+    const boost = 1 + 0.85 * gust + 0.55 * layerAct[nUp];
     let energy = 0, nE = 0;
     for (let i = 0; i < nAct; i++) {
       const path = PATHS[P.path[i]];
       if (!path) continue;
-      const liNear = clamp(Math.floor(storyU(pathPos(path, P.s[i], trailTmp).x) * nLayers), 0, nLayers - 1);
+      const liNear = clamp(Math.floor(storyU(pathPos(path, P.s[i], trailTmp).x) * nStat), 0, nStat - 1);
       const spd = P.sp[i] * boost * (1 + 0.65 * layerAct[liNear]);
       P.s[i] += spd * dt;
       P.age[i] += dt;
@@ -556,7 +650,7 @@ export async function initHero({ reduceMotion, isSmall }) {
       }
     }
     flowE = nE ? energy / nE : 0.5;
-    rotorSpeed += (OMEGA * (0.72 + 0.28 * clamp(flowE, 0, 1)) * (1 + 0.95 * layerAct[nLayers] + 0.28 * gust) - rotorSpeed) * Math.min(1, dt * 4.5);
+    rotorSpeed += (OMEGA * (0.72 + 0.28 * clamp(flowE, 0, 1)) * (1 + 0.95 * layerAct[nUp] + 0.28 * gust) - rotorSpeed) * Math.min(1, dt * 4.5);
     rotorAng += rotorSpeed * dt;
     simT += dt;
   }
@@ -622,7 +716,7 @@ export async function initHero({ reduceMotion, isSmall }) {
       const p = pulses[i];
       if (p.path >= nP) p.path = i % nP;
       const path = PATHS[p.path];
-      const boost = 1 + 1.1 * gust + 0.8 * layerAct[clamp(Math.floor((p.s / (path.m - 1)) * nLayers), 0, nLayers)];
+      const boost = 1 + 1.1 * gust + 0.8 * layerAct[clamp(Math.floor((p.s / (path.m - 1)) * nStat), 0, nStat - 1)];
       p.s += p.v * dt * boost * 0.55;
       if (p.s >= path.m - 1) { p.path = (p.path + 3) % nP; p.s = 0; p.v = 8 + rnd() * 6; }
       pathPos(path, p.s, trailTmp);
@@ -644,10 +738,10 @@ export async function initHero({ reduceMotion, isSmall }) {
     for (let i = 0; i < NN; i++) {
       const nd = nodes[i], li = nLayer[i];
       const breath = 0.5 + 0.5 * Math.sin(t * 1.1 + nPh[i]);
-      const act = layerAct[li];
-      const k = zoneK(nd.x);
+      const act = actOf(li);
+      const k = zoneK(nd.x) * (li >= nUp ? 0.82 : 1);
       const glow = (0.38 + 0.28 * breath + 0.7 * act) * k;
-      palAt(li / Math.max(1, nLayers - 1), rgb);
+      palAt(li >= nUp ? 0.78 + 0.22 * ((li - nUp) / Math.max(1, nDown - 1)) : (li / Math.max(1, nUp - 1)) * 0.72, rgb);
       pos[i * 3] = nd.x; pos[i * 3 + 1] = nd.y; pos[i * 3 + 2] = nd.z;
       c[i * 3] = nCol[i][0] * glow * 1.2; c[i * 3 + 1] = nCol[i][1] * glow * 1.2; c[i * 3 + 2] = nCol[i][2] * glow * 1.2;
       sz[i] = (coreR[i] * 2.8) * (0.9 + 0.35 * act) * (0.75 + 0.25 * k);
@@ -680,16 +774,15 @@ export async function initHero({ reduceMotion, isSmall }) {
     const forced = (holdGust || (stats && stats.forceGust)) ? 1 : 0;
     const target = Math.max(periodic, poke > 0.2 ? poke : 0, forced);
     gust += (target - gust) * (target > gust ? 0.2 : 0.05);
-    let waveT = forced ? 0.62 : (periodic ? prog : poke > 0.2 ? 0.45 : 0);
+    let waveT = forced ? (nUp / Math.max(1, nStat - 1)) : (periodic ? prog : poke > 0.2 ? 0.45 : 0);
     if (forced) gust = Math.max(gust, 0.92);
     wave += (waveT - wave) * (forced ? 1 : 0.18);
-    // layer activations: a bump travelling 0 → 1 (rotor)
-    for (let li = 0; li <= nLayers; li++) {
-      const pos = li / nLayers;
+    for (let i = 0; i < nStat; i++) {
+      const pos = i / Math.max(1, nStat - 1);
       const bump = Math.exp(-Math.pow((wave - pos) * 3.6, 2));
-      layerAct[li] = gust * (0.15 + 0.85 * bump);
+      layerAct[i] = gust * (0.15 + 0.85 * bump);
     }
-    nacellePulse = layerAct[nLayers];
+    nacellePulse = layerAct[nUp];
     if (nacelleHalo && nacelleHalo.material) {
       const k = Math.min(1, 0.12 + nacellePulse * 0.55 + gust * 0.12);
       nacelleHalo.material.opacity = 0.08 + 0.28 * k;
@@ -710,26 +803,47 @@ export async function initHero({ reduceMotion, isSmall }) {
     composer.addPass(new OutputPass());
   } catch (e) { composer = null; useBloom = false; }
 
-  let W = 1, H = 1, camZ = 12, lookX = 1.12;
+  let W = 1, H = 1, camZ = 12, lookX = 1.12, camY = 0.15, lookY = -0.05;
   function layout() {
     W = canvas.clientWidth || canvas.parentElement.clientWidth || 1280;
     H = canvas.clientHeight || canvas.parentElement.clientHeight || 800;
+    syncDim();
     renderer.setSize(W, H, false);
     camera.aspect = W / Math.max(1, H); camera.updateProjectionMatrix();
     if (composer) { composer.setPixelRatio(pixelRatio); composer.setSize(W, H); }
     if (isSmall) {
-      camZ = 17.2; lookX = 0.35;
-      stage.position.set(0.05, 4.95, 0); stage.scale.setScalar(1);
-      placeNetwork(-2.25, 1.25, 1.85);
-      turb.position.set(2.18, 0.04, 0); turb.scale.setScalar(1.02);
+      /* Slightly longer camera so a larger rotor + two spaced wake layers stay on-canvas. */
+      camZ = 18.0; lookX = 0.48; camY = 0.15; lookY = -0.05;
+      stage.position.set(0.05 * flipX, 4.95, 0); applyStageScale(1);
+      turb.position.set(1.82, 0.14, 0); turb.scale.setScalar(1.16);
+      turb.rotation.y = YAW;
+      turb.updateMatrixWorld(true);
+      placeNetwork(-2.35, 0.72, 1.85, 3.15, 3.72, 1.55);
+    } else if (W >= 1024) {
+      /* Sit the rig in the upper-middle so its lower third softly overlaps
+         the typography. In LTR that is the name; in FA the stage is mirrored
+         so the input sits behind the name (right) and the rotor overlaps the
+         quote (left). Rotor is ~18% larger than v30; wake layers are spread
+         horizontally and vertically so they don't pack behind the disc. */
+      const a = W / Math.max(1, H);
+      camZ = 14.0; lookX = 1.28; camY = 0.06; lookY = 0.15;
+      stage.position.set(0, 1.65, 0);
+      applyStageScale(clamp(a / 1.6, 0.84, 1.08) * 0.92);
+      turb.position.set(4.68, 0.28, 0); turb.scale.setScalar(1.34);
+      turb.rotation.y = YAW;
+      turb.updateMatrixWorld(true);
+      placeNetwork(-3.35, 2.72, 2.55, 6.20, 8.20, 2.10);
     } else {
       const a = W / Math.max(1, H);
-      camZ = 12.0; lookX = 1.12;
+      camZ = 12.6; lookX = 1.35; camY = 0.15; lookY = -0.05;
       stage.position.set(0, 0.1, 0);
-      stage.scale.setScalar(clamp(a / 1.6, 0.84, 1.08));
-      placeNetwork(-3.15, 3.2, 2.55);
-      turb.position.set(4.82, 0.12, 0); turb.scale.setScalar(1.16);
+      applyStageScale(clamp(a / 1.6, 0.84, 1.08));
+      turb.position.set(4.68, 0.22, 0); turb.scale.setScalar(1.34);
+      turb.rotation.y = YAW;
+      turb.updateMatrixWorld(true);
+      placeNetwork(-3.35, 2.72, 2.55, 6.20, 8.20, 2.10);
     }
+    lookX *= flipX;
     turb.rotation.y = YAW;
     turb.updateMatrixWorld(true);
     stage.updateMatrixWorld(true);
@@ -745,6 +859,7 @@ export async function initHero({ reduceMotion, isSmall }) {
   }
   layout();
   window.addEventListener('resize', () => { layout(); if (!running) drawStatic(); });
+  document.addEventListener('ha:langchange', () => { layout(); if (!running) drawStatic(); });
 
   if (!isSmall && !reduceMotion) {
     window.addEventListener('pointermove', e => {
@@ -755,7 +870,7 @@ export async function initHero({ reduceMotion, isSmall }) {
   const motionK = reduceMotion ? 0.28 : 1;
   function render() { (useBloom && composer) ? composer.render() : renderer.render(scene, camera); }
   function drawStatic() {
-    camera.position.set(lookX, 0.15, camZ); camera.lookAt(lookX, -0.05, 0);
+    camera.position.set(lookX, camY, camZ); camera.lookAt(lookX, lookY, 0);
     rotor.rotation.x = rotorAng; updateNodes(2); updatePulses(0.016); writeColors(); render();
   }
 
@@ -783,11 +898,11 @@ export async function initHero({ reduceMotion, isSmall }) {
     const dt = dtReal * motionK;
     clock.t += dt; const t = clock.t;
     if (reduceMotion) {
-      camera.position.set(lookX, 0.15, camZ); camera.lookAt(lookX, -0.05, 0); stage.rotation.y = 0;
+      camera.position.set(lookX, camY, camZ); camera.lookAt(lookX, lookY, 0); stage.rotation.y = 0;
     } else {
       mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
-      camera.position.set(lookX + Math.sin(t * 0.055) * 0.48 + mouse.x * 0.4, 0.12 + Math.sin(t * 0.042) * 0.24 - mouse.y * 0.24, camZ + Math.sin(t * 0.033) * 0.26);
-      camera.lookAt(lookX + mouse.x * 0.16, -0.05 - mouse.y * 0.1, 0);
+      camera.position.set(lookX + Math.sin(t * 0.055) * 0.48 + mouse.x * 0.4, camY + Math.sin(t * 0.042) * 0.24 - mouse.y * 0.24, camZ + Math.sin(t * 0.033) * 0.26);
+      camera.lookAt(lookX + mouse.x * 0.16, lookY - mouse.y * 0.1, 0);
       stage.rotation.y = Math.sin(t * 0.045) * 0.025 + mouse.x * 0.016;
     }
     updateGust(dt, t);

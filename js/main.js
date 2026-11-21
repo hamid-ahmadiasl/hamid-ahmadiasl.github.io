@@ -93,7 +93,7 @@ if (!document.body.classList.contains('page--sub')) {
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
 if ($('#scene')) {
-  import('./hero.js?v=24')
+  import('./hero.js?v=31')
     .then((m) => m.initHero({ reduceMotion, isSmall }))
     .catch((e) => {
       console.warn('3D hero disabled:', e && e.message);

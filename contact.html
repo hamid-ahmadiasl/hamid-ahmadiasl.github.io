@@ -42,7 +42,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=24">
+  <link rel="stylesheet" href="css/style.css?v=30">
 
 </head>
 <body class="page--sub">
@@ -51,7 +51,6 @@
 
   <header class="nav" id="nav">
     <a class="nav__brand" href="index.html" aria-label="Hamid Ahmadi Asl — home" data-i18n-attr="aria-label:nav.brand"><img class="nav__logo" src="assets/logo.svg?v=12" alt="" width="38" height="34"></a>
-    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu" data-i18n-attr="aria-label:nav.toggle"><span></span><span></span></button>
     <nav class="nav__links" id="navLinks" aria-label="Primary" data-i18n-attr="aria-label:nav.primary">
       <a href="index.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.8V20h11V10.8"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="nav.home">Home</span></a>
       <a href="education.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span><span data-i18n="nav.education">Education</span></a>
@@ -62,13 +61,17 @@
       <a href="insights.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span><span data-i18n="nav.insights">Insights</span></a>
       <a href="honors.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span><span data-i18n="nav.honors">Honors</span></a>
       <a href="contact.html" class="is-active" aria-current="page"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span><span data-i18n="nav.contact">Contact</span></a>
-      <div class="lang-switch" role="group" data-i18n-attr="aria-label:lang.label" aria-label="Language">
+    </nav>
+    <div class="nav__end">
+      <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu" data-i18n-attr="aria-label:nav.toggle"><span></span><span></span></button>
+      <div class="lang-switch" dir="ltr" role="group" data-i18n-attr="aria-label:lang.label" aria-label="Language">
+        <span class="lang-switch__ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3.2 3 4.8 6.2 4.8 9S15.2 18 12 21"/><path d="M12 3C8.8 6 7.2 9.2 7.2 12S8.8 18 12 21"/></svg></span>
         <button type="button" class="lang-switch__btn" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
-        <button type="button" class="lang-switch__btn" data-set-lang="fa" aria-pressed="false" lang="fa">FA</button>
         <button type="button" class="lang-switch__btn" data-set-lang="it" aria-pressed="false" lang="it">IT</button>
         <button type="button" class="lang-switch__btn" data-set-lang="fi" aria-pressed="false" lang="fi">FI</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="fa" aria-pressed="false" lang="fa">FA</button>
       </div>
-    </nav>
+    </div>
     <div class="nav__backdrop" id="navBackdrop" hidden></div>
   </header>
 
@@ -106,8 +109,8 @@
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <script src="js/i18n.js?v=24"></script>
-  <script type="module" src="js/main.js?v=24"></script>
+  <script src="js/i18n.js?v=30"></script>
+  <script type="module" src="js/main.js?v=25"></script>
   <script src="js/stats.js?v=24" defer></script>
   <script type="module" src="js/chat.js?v=24"></script>
 </body>
