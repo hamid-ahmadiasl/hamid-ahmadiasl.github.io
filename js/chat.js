@@ -25,7 +25,7 @@ const ACCEPT_UPLOAD = '.pdf,.doc,.docx,.odt,.txt,.rtf,.png,.jpg,.jpeg,.xlsx,.csv
 const I18N = {
   en: {
     greeting:
-      "Hi — I can answer questions about Hamid’s research, publications, experience and background, using only what’s on this site. If you’d like to reach him personally, tap Ask Hamid directly. You can also request a meeting or send him a document.",
+      'Chat with me about Hamid, message him directly, or request a meeting.',
     research: 'Research interests',
     researchPrompt: "What are Hamid’s research interests?",
     publications: 'Publications',
@@ -70,7 +70,7 @@ const I18N = {
   },
   fa: {
     greeting:
-      'سلام — می‌توانم درباره پژوهش، مقالات، تجربه و پیش‌زمینه حمید، فقط بر اساس همین سایت، جواب بدهم. برای پیام مستقیم، «پیام مستقیم به حمید» را بزنید. می‌توانید درخواست جلسه بدهید یا سندی برایش بفرستید.',
+      'درباره حمید با من گفتگو کنید، مستقیم به او پیام دهید یا درخواست جلسه بدهید.',
     research: 'زمینه‌های پژوهش',
     researchPrompt: 'زمینه‌های پژوهش حمید چیست؟',
     publications: 'مقالات',
@@ -115,7 +115,7 @@ const I18N = {
   },
   it: {
     greeting:
-      'Ciao — posso rispondere a domande su ricerca, pubblicazioni, esperienza e percorso di Hamid, usando solo ciò che è su questo sito. Per scrivergli di persona, tocca Chiedi direttamente a Hamid. Puoi anche richiedere un incontro o inviargli un documento.',
+      'Chatta con me su Hamid, scrivigli direttamente o richiedi un incontro.',
     research: 'Interessi di ricerca',
     researchPrompt: 'Quali sono gli interessi di ricerca di Hamid?',
     publications: 'Pubblicazioni',
@@ -160,7 +160,7 @@ const I18N = {
   },
   fi: {
     greeting:
-      "Hei — voin vastata kysymyksiin Hamidin tutkimuksesta, julkaisuista, kokemuksesta ja taustasta, käyttäen vain tämän sivuston sisältöä. Jos haluat tavoittaa hänet henkilökohtaisesti, napauta Kysy suoraan Hamidilta. Voit myös pyytää tapaamista tai lähettää hänelle asiakirjan.",
+      'Keskustele kanssani Hamidista, lähetä hänelle viesti tai ehdota tapaamista.',
     research: 'Tutkimusaiheet',
     researchPrompt: 'Mitkä ovat Hamidin tutkimusaiheet?',
     publications: 'Julkaisut',
@@ -207,11 +207,14 @@ const I18N = {
 
 function detectUiLang() {
   try {
+    if (typeof window !== 'undefined' && window.HA_I18N && I18N[window.HA_I18N.lang]) {
+      return window.HA_I18N.lang;
+    }
     const html = String(document.documentElement.getAttribute('data-lang') || document.documentElement.lang || '').toLowerCase();
     const code = html.split(/[-_]/)[0];
     if (I18N[code]) return code;
-    const nav = String(navigator.language || navigator.userLanguage || '').toLowerCase().split(/[-_]/)[0];
-    if (I18N[nav]) return nav;
+    const stored = String(localStorage.getItem('ha-lang') || '').toLowerCase();
+    if (I18N[stored]) return stored;
   } catch {
     /* ignore */
   }
@@ -227,8 +230,51 @@ function syncUiLang(lang) {
   T = I18N[LANG] || I18N.en;
 }
 
+function hasUserMessages(messages = state.messages) {
+  return (messages || []).some((m) => m.role === 'user');
+}
+
+function isIdleWelcome(messages = state.messages) {
+  return !(messages || []).some((m) =>
+    m.role === 'user' ||
+    m.role === 'hamid' ||
+    (m.role === 'assistant' && m.source !== 'greeting')
+  );
+}
+
+/* Rewrite or drop a greeting left over from a previous language. Never leave
+   a FA/IT/FI/EN welcome sitting in storage once the site language has changed. */
+function relocalizeIdleChat(persist = true) {
+  if (!isIdleWelcome()) return false;
+  state.messages = [welcomeMessage()];
+  state.sessionFresh = true;
+  if (persist) saveLocal(state.messages);
+  return true;
+}
+
+function renderChips() {
+  const wrap = document.querySelector('#chatChips');
+  if (!wrap || wrap.dataset.busy) return;
+  wrap.replaceChildren();
+  chips().forEach((chip) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chat-chip' + (chip.ask ? ' chat-chip--ask' : chip.meeting ? ' chat-chip--meeting' : '');
+    btn.textContent = chip.label;
+    btn.addEventListener('click', () => {
+      if (chip.ask) enterAskMode(true);
+      else if (chip.meeting) startMeeting();
+      else {
+        leaveModesForChat();
+        sendChat(chip.prompt);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+}
+
 function refreshChatChrome() {
-  syncUiLang(document.documentElement.getAttribute('data-lang') || document.documentElement.lang);
+  syncUiLang(detectUiLang());
   const root = document.querySelector('.chat-root');
   if (!root) return;
   root.setAttribute('lang', LANG);
@@ -254,6 +300,9 @@ function refreshChatChrome() {
   const your = root.querySelector('label[for="chatInput"]'); if (your) your.textContent = T.yourMessage;
   setLabel('#chatAttach', 'aria-label', T.attachTitle); setLabel('#chatAttach', 'title', T.attachTitle);
   setLabel('#chatSend', 'aria-label', T.send);
+  const skip = root.querySelector('#chatMeetingSkip'); if (skip) skip.textContent = T.skip;
+  const cancel = root.querySelector('#chatMeetingCancel'); if (cancel) cancel.textContent = T.cancel;
+  const typing = root.querySelector('.chat-typing'); if (typing) typing.setAttribute('aria-label', T.typing);
   const input = root.querySelector('#chatInput');
   if (input) {
     try {
@@ -261,37 +310,15 @@ function refreshChatChrome() {
       else input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
     } catch (e) { input.placeholder = T.placeholder; }
   }
-  const chipsWrap = root.querySelector('#chatChips');
-  if (chipsWrap && !chipsWrap.dataset.busy) {
-    const btns = [...chipsWrap.querySelectorAll('.chat-chip')];
-    const next = [
-      { label: T.research, prompt: T.researchPrompt },
-      { label: T.publications, prompt: T.publicationsPrompt },
-      { label: T.experience, prompt: T.experiencePrompt },
-      { label: T.ask, ask: true },
-      { label: T.meeting, meeting: true },
-    ];
-    btns.forEach((btn, i) => { if (next[i]) btn.textContent = next[i].label; });
-  }
-  try {
-    const ev = new Event('input'); // trigger any placeholder refresh if hooked
-  } catch (e) { /* ignore */ }
+  renderChips();
+  relocalizeIdleChat(true);
+  rerender();
 }
 
 document.addEventListener('ha:langchange', (e) => {
   const lang = e && e.detail && e.detail.lang;
-  syncUiLang(lang || detectUiLang());
-  refreshChatChrome();
-  const input = document.querySelector('#chatInput');
-  // Re-apply the current compose placeholder if the helper exists.
-  if (input && typeof T !== 'undefined') {
-    const root = document.querySelector('.chat-root');
-    // The existing placeholder logic is re-run by a custom event some builds listen for;
-    // set a sensible default here, then let any later call overwrite it.
-    if (input.placeholder) {
-      /* leave; a later call in this module's placeholder fn will update on next interaction */
-    }
-  }
+  syncUiLang(I18N[lang] ? lang : detectUiLang());
+  if (typeof state !== 'undefined' && state.ready) refreshChatChrome();
 });
 
 const $ = (s, c = document) => c.querySelector(s);
@@ -474,6 +501,10 @@ function loadLocal() {
 
 function saveLocal(messages) {
   try {
+    if (isIdleWelcome(messages)) {
+      sessionStorage.removeItem(STORAGE_LOG);
+      return;
+    }
     sessionStorage.setItem(STORAGE_LOG, JSON.stringify(messages.slice(-MAX_LOCAL)));
   } catch {
     /* private mode / quota */
@@ -628,21 +659,7 @@ function build() {
   `;
   document.body.appendChild(root);
 
-  chips().forEach((chip) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'chat-chip' + (chip.ask ? ' chat-chip--ask' : chip.meeting ? ' chat-chip--meeting' : '');
-    btn.textContent = chip.label;
-    btn.addEventListener('click', () => {
-      if (chip.ask) enterAskMode(true);
-      else if (chip.meeting) startMeeting();
-      else {
-        leaveModesForChat();
-        sendChat(chip.prompt);
-      }
-    });
-    $('#chatChips', root).appendChild(btn);
-  });
+  renderChips();
 
   $('#chatLaunch', root).addEventListener('click', () => toggle());
   $('#chatClose', root).addEventListener('click', () => toggle(false));
@@ -665,14 +682,19 @@ function build() {
   });
 
   state.ready = true;
+  syncUiLang(detectUiLang());
+  root.setAttribute('lang', LANG);
+  root.setAttribute('dir', LANG === 'fa' ? 'rtl' : 'ltr');
   const cached = loadLocal();
-  if (cached.length) {
+  if (cached.length && !isIdleWelcome(cached)) {
     state.messages = cached;
     state.sessionFresh = false;
     rerender();
     syncLastTs();
+    refreshChatChrome();
   } else {
     startFreshWelcome({ keepLastTs: true });
+    refreshChatChrome();
   }
 }
 
@@ -842,6 +864,7 @@ function toggle(force) {
   launch.classList.toggle('is-open', open);
   document.documentElement.classList.toggle('chat-open', open);
   if (open) {
+    refreshChatChrome();
     markSeen();
     requestAnimationFrame(() => {
       const log = $('#chatLog');

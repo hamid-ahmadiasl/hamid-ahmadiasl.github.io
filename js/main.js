@@ -76,7 +76,7 @@ if (document.readyState === 'complete') initAnimations();
 {
   const full = $('#posts'), preview = $('#postsPreview');
   if (full || preview) {
-    import('./posts.js?v=24').then((m) =>
+    import('./posts.js?v=32').then((m) =>
       full
         ? m.initPostsPage(full, $('#postFilters'), { reduceMotion })
         : m.initPostsPreview(preview, { limit: 3 })
@@ -86,14 +86,14 @@ if (document.readyState === 'complete') initAnimations();
 
 /* ---------- Wallpaper motion (homepage only; subpages use a dimmer static wallpaper) ---------- */
 if (!document.body.classList.contains('page--sub')) {
-  import('./wallpaper.js?v=12')
+  import('./wallpaper.js?v=32')
     .then((m) => m.initWallpaper({ reduceMotion: false }))
     .catch((e) => console.warn('wallpaper motion disabled:', e && e.message));
 }
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
 if ($('#scene')) {
-  import('./hero.js?v=31')
+  import('./hero.js?v=32')
     .then((m) => m.initHero({ reduceMotion, isSmall }))
     .catch((e) => {
       console.warn('3D hero disabled:', e && e.message);
@@ -103,7 +103,7 @@ if ($('#scene')) {
 
 /* ---------- Research journal books ---------- */
 if (document.getElementById('pubShelf')) {
-  import('./pubs.js?v=24')
+  import('./pubs.js?v=32')
     .then((m) => m.initPubs())
     .catch((e) => console.warn('pubs unavailable:', e && e.message));
 }

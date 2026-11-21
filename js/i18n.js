@@ -164,7 +164,6 @@
   add("cta.linkedin", "LinkedIn", "LinkedIn", "LinkedIn");
   add("cta.github", "GitHub", "GitHub", "GitHub");
   add("cta.email", "Email", "ایمیل", "Email");
-  add("about.kicker", "01 — About", "۰۱ — درباره‌ی من", "01 — Chi sono");
   add("about.heading", "Profile summary", "خلاصه‌ی پیشینه", "Profilo in breve");
   add("about.p1", "AI and computational science researcher with a mechanical engineering background, currently pursuing an MSc in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. I build machine-learning models for physical and engineering systems, using CFD and experimental data to train surrogate models, reconstruct flow fields and explore design spaces.", "پژوهشگر هوش مصنوعی و علوم محاسباتی با پیش‌زمینه‌ی مهندسی مکانیک، و دانشجوی کارشناسی ارشد هوش مصنوعی برای علم و فناوری در دانشگاه میلانو-بیکوکا. مدل‌های یادگیری ماشین را برای سامانه‌های فیزیکی و مهندسی می‌سازم و از دینامیک سیالات محاسباتی و داده‌های آزمایشگاهی برای آموزش مدل‌های جانشین، بازسازی میدان جریان و کاوش فضای طراحی استفاده می‌کنم.", "Ricercatore in intelligenza artificiale e scienza computazionale, con una formazione in ingegneria meccanica, attualmente iscritto alla laurea magistrale in Artificial Intelligence for Science and Technology presso l’Università degli Studi di Milano-Bicocca. Sviluppo modelli di apprendimento automatico per sistemi fisici e ingegneristici, usando CFD e dati sperimentali per addestrare modelli surrogati, ricostruire campi di flusso ed esplorare gli spazi di progetto.");
   add("about.p2", "My work sits where physics meets data: scientific machine learning, the data quality and generalization of small-sample surrogates, and data-driven design optimization. Years of R&D and industrial experience as a Project Sub-Leader (PSL) and Design Engineer, together with patents and peer-reviewed publications, keep my models grounded in what real engineering problems need.", "کارم در جایی است که فیزیک و داده به هم می‌رسند: یادگیری ماشین علمی، کیفیت داده و تعمیم‌پذیری مدل‌های جانشین با نمونه‌ی محدود، و بهینه‌سازی طراحی مبتنی بر داده. سال‌ها تجربه‌ی تحقیق‌وتوسعه و صنعتی به‌عنوان جانشین رهبر پروژه (PSL) و مهندس طراحی، در کنار اختراعات و مقالات داوری‌شده، مدل‌هایم را به نیازهای واقعی مهندسی نزدیک نگه می‌دارد.", "Il mio lavoro sta dove la fisica incontra i dati: machine learning scientifico, qualità dei dati e generalizzazione dei surrogati su campioni piccoli, e ottimizzazione progettuale basata sui dati. Anni di esperienza in ricerca e sviluppo e in ambito industriale come Project Sub-Leader (PSL) e Design Engineer, insieme a brevetti e pubblicazioni sottoposte a revisione, tengono i modelli ancorati a ciò che i problemi ingegneristici reali richiedono.");
@@ -311,7 +310,6 @@
   add("pubs.openAria", "Open publication", "گشودن اثر", "Apri la pubblicazione");
   add("pubs.new", "New", "تازه", "Nuovo");
 
-  add("hero.scroll", "Scroll to About", "رفتن به بخش درباره", "Vai a Informazioni");
   add("skills.flow.aria", "Physics, then Engineering, then AI, leading to Intelligent Engineering Systems", "فیزیک، سپس مهندسی، سپس هوش مصنوعی، که به سامانه‌های مهندسی هوشمند می‌انجامد", "Fisica, poi ingegneria, poi IA, fino ai sistemi ingegneristici intelligenti");
   add("posts.seeLi", "See my posts on LinkedIn", "نوشته‌های من را در LinkedIn ببینید", "Vedi i miei post su LinkedIn");
   add("pubs.journalPage", "Journal page", "صفحه مجله", "Pagina della rivista");
@@ -378,7 +376,6 @@
     "cta.linkedin": "LinkedIn",
     "cta.github": "GitHub",
     "cta.email": "Sähköposti",
-    "about.kicker": "01 — Esittely",
     "about.heading": "Lyhyt profiili",
     "about.p1": "Olen tekoälyn ja laskennallisen tieteen tutkija, taustaltani konetekniikan osaaja, ja suoritan parhaillaan maisterintutkintoa Artificial Intelligence for Science and Technology -ohjelmassa Università degli Studi di Milano-Bicoccassa. Kehitän koneoppimismalleja fysikaalisille ja teknisille järjestelmille: hyödynnän CFD- ja koetuloksia sijaismallien koulutukseen, virtauskenttien rekonstruointiin ja suunnitteluavaruuden tutkimiseen.",
     "about.p2": "Työskentelen siellä, missä fysiikka kohtaa datan: tieteellinen koneoppiminen, pienten otosten sijaismallien datan laatu ja yleistettävyys sekä dataan perustuva suunnittelun optimointi. Vuosien T&K- ja teollisuuskokemus projektin apulaisjohtajana (PSL) ja suunnitteluinsinöörinä sekä patentit ja vertaisarvioidut julkaisut pitävät mallini kiinni siinä, mitä todelliset insinööriongelmat vaativat.",
@@ -524,7 +521,6 @@
     "pubs.close": "Sulje julkaisu",
     "pubs.openAria": "Avaa julkaisu",
     "pubs.new": "Uusi",
-    "hero.scroll": "Siirry esittelyyn",
     "skills.flow.aria": "Fysiikka, sitten insinööritiede, sitten tekoäly, kohti älykkäitä insinöörijärjestelmiä",
     "posts.seeLi": "Katso julkaisuni LinkedInissä",
     "pubs.journalPage": "Lehden sivu",
