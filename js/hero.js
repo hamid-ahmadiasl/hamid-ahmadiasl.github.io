@@ -319,7 +319,7 @@ export async function initHero({ reduceMotion, isSmall }) {
     for (let c = 0; c < 3; c++) o[c] = pal[i][c] + (pal[i + 1][c] - pal[i][c]) * u; return o; };
 
   const layers = isSmall ? [4, 6, 3] : [5, 7, 6, 3];
-  const layerGap = isSmall ? 0.70 : 0.84;
+  const layerGap = isSmall ? 1.12 : 1.39;               // ~1.65x wider layer spacing
   const layerH = isSmall ? 2.05 : 2.55;
   const layerIndex = [];
   const nodes = [], nCol = [], coreR = [], nPh = [];
@@ -402,7 +402,7 @@ export async function initHero({ reduceMotion, isSmall }) {
   }
 
   /* Faint tensor / matrix grid behind the network, with a slowly scrolling binary field. */
-  const gridW = isSmall ? 2.6 : 3.4, gridH = isSmall ? 2.4 : 3.0;
+  const gridW = isSmall ? 4.2 : 5.5, gridH = isSmall ? 2.4 : 3.0;
   { const pts = [], cols = [];
     const nx = isSmall ? 6 : 8, ny = isSmall ? 5 : 7;
     const pushLine = (x0, y0, x1, y1, a) => {
@@ -511,7 +511,7 @@ export async function initHero({ reduceMotion, isSmall }) {
         p.t += dt * p.v;
         if (p.t >= 1) {
           const end = pJ[p.e];
-          glow[end] = Math.min(1.7, glow[end] + 0.85);
+          glow[end] = Math.min(1.7, glow[end] + (reduceMotion ? 0.28 : 0.85));
           const ne = outgoing(end, true);
           p.e = ne; p.t = 0;
           if (ne < 0) p.wait = 0.15 + rnd() * 0.4;
@@ -580,12 +580,12 @@ export async function initHero({ reduceMotion, isSmall }) {
     if (narrow) {
       camZ = 15.5; stage.position.set(0, 3.7, 0); stage.scale.setScalar(1);
       rig.position.set(-0.45, 0.2, 0); rig.scale.setScalar(1.45); zoneK = 0.95;
-      X0 = -4.6; X1 = 4.6; YH = 3.0; ZH = 2.2; XC = 1.4; netAt.set(1.6, -1.0, -1.2);
+      X0 = -4.6; X1 = 4.6; YH = 3.0; ZH = 2.2; XC = 1.4; netAt.set(1.15, -1.0, -1.2);
     } else {
       camZ = 10.5; const a = W / H;                              // keep the right-hand composition on wide/narrow desktops
       stage.position.set(clamp((a - 1.6) * 2.2, -0.8, 2.2), 0, 0); stage.scale.setScalar(clamp(a / 1.6, 0.78, 1.15));
       rig.position.set(2.75, 0.75, 0); rig.scale.setScalar(1.45); zoneK = 1.3;
-      X0 = -6; X1 = 6; YH = 3.0; ZH = 2.4; XC = 1.6; netAt.set(6.4, -0.6, -1.6);
+      X0 = -6; X1 = 6; YH = 3.0; ZH = 2.4; XC = 1.6; netAt.set(4.7, -0.5, -1.55);
     }
     // pin the layered network in the wake, to the right of the turbine (and of the text)
     ann.position.copy(netAt);
@@ -597,7 +597,7 @@ export async function initHero({ reduceMotion, isSmall }) {
     pointMat.uniforms.uScale.value = (H * pixelRatio) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   }
   layout();
-  window.addEventListener('resize', () => { layout(); if (reduceMotion) drawStatic(); });
+  window.addEventListener('resize', () => { layout(); if (!running) drawStatic(); });
 
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   if (!isSmall && !reduceMotion) {
@@ -606,6 +606,7 @@ export async function initHero({ reduceMotion, isSmall }) {
     }, { passive: true });
   }
 
+  const motionK = reduceMotion ? 0.28 : 1;                   // Windows "Animation effects off" still gets a slow drift
   function render() { (useBloom && composer) ? composer.render() : renderer.render(scene, camera); }
   function drawStatic() {
     camera.position.set(0.6, 0.2, camZ); camera.lookAt(0, 0, 0);
@@ -633,12 +634,17 @@ export async function initHero({ reduceMotion, isSmall }) {
     const rawMs = now - clock.last; stats.rawSum += rawMs; stats.rawN++; stats.avgRawFrameMs = stats.rawSum / stats.rawN;
     const dtReal = Math.min(rawMs / 1000, 0.05); clock.last = now;
     const t0 = performance.now();
-    clock.t += dtReal; const t = clock.t;
-    mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
-    camera.position.set(Math.sin(t * 0.07) * 1.1 + mouse.x * 0.9, Math.sin(t * 0.05) * 0.45 - mouse.y * 0.55, camZ + Math.sin(t * 0.04) * 0.5);
-    camera.lookAt(mouse.x * 0.3, -mouse.y * 0.2, 0);
-    stage.rotation.y = Math.sin(t * 0.06) * 0.05 + mouse.x * 0.04;
-    stepParticles(dtReal); rotor.rotation.x = rotorAng; writeColors(); updateNet(dtReal, t);
+    const dt = dtReal * motionK;
+    clock.t += dt; const t = clock.t;
+    if (reduceMotion) {
+      camera.position.set(0.6, 0.2, camZ); camera.lookAt(0, 0, 0); stage.rotation.y = 0;
+    } else {
+      mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
+      camera.position.set(Math.sin(t * 0.07) * 1.1 + mouse.x * 0.9, Math.sin(t * 0.05) * 0.45 - mouse.y * 0.55, camZ + Math.sin(t * 0.04) * 0.5);
+      camera.lookAt(mouse.x * 0.3, -mouse.y * 0.2, 0);
+      stage.rotation.y = Math.sin(t * 0.06) * 0.05 + mouse.x * 0.04;
+    }
+    stepParticles(dt); rotor.rotation.x = rotorAng; writeColors(); updateNet(dt, t);
     const t1 = performance.now();
     render();
     stats.jsSum += (t1 - t0);
@@ -656,18 +662,16 @@ export async function initHero({ reduceMotion, isSmall }) {
 
   // cheap warm-up: seed the particles (tip tracers already laid out along their helices) and advect a few steps
   for (let i = 0; i < N; i++) spawn(i, true);
-  const warm = reduceMotion ? 120 : 16;
+  const warm = reduceMotion ? 40 : 16;
   for (let s = 0; s < warm; s++) stepParticles(1 / 40);         // ~ms of work: no need to yield
   stats.setupMs = Math.round(performance.now() - tInit);
   try { if (renderer.compileAsync && renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene, camera); } catch (e) { /* compile lazily */ }
   const reveal = () => { canvas.classList.add('is-ready'); stats.firstFrameMs = Math.round(performance.now()); stats.initMs = Math.round(performance.now() - tInit); };
-  if (reduceMotion) {
-    drawStatic(); reveal();
-  } else {
-    start(); requestAnimationFrame(() => requestAnimationFrame(reveal));
-    let inView = true;
-    new IntersectionObserver(([e]) => { inView = e.isIntersecting; (inView && !document.hidden) ? start() : stop(); }, { threshold: 0 }).observe(canvas);
-    document.addEventListener('visibilitychange', () => { (!document.hidden && inView) ? start() : stop(); });
-  }
+  // Always run the loop. Under prefers-reduced-motion (including Windows "Animation
+  // effects off") we keep a slow, non-flashing drift of the binary streams instead of a freeze.
+  start(); requestAnimationFrame(() => requestAnimationFrame(reveal));
+  let inView = true;
+  new IntersectionObserver(([e]) => { inView = e.isIntersecting; (inView && !document.hidden) ? start() : stop(); }, { threshold: 0 }).observe(canvas);
+  document.addEventListener('visibilitychange', () => { (!document.hidden && inView) ? start() : stop(); });
   canvas.dataset.ready = 'true';
 }

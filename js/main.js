@@ -93,7 +93,7 @@ if (!document.body.classList.contains('page--sub')) {
 
 /* ---------- Three.js hero (lazy, see js/hero.js) ---------- */
 if ($('#scene')) {
-  import('./hero.js?v=18')
+  import('./hero.js?v=20')
     .then((m) => m.initHero({ reduceMotion, isSmall }))
     .catch((e) => {
       console.warn('3D hero disabled:', e && e.message);
@@ -103,7 +103,7 @@ if ($('#scene')) {
 
 /* ---------- Research journal books ---------- */
 if (document.getElementById('pubShelf')) {
-  import('./pubs.js?v=18')
+  import('./pubs.js?v=20')
     .then((m) => m.initPubs())
     .catch((e) => console.warn('pubs unavailable:', e && e.message));
 }

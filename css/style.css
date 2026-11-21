@@ -396,7 +396,7 @@ html.chat-open{overflow:hidden}
 /* ---------- Hero AI labels & legend (v17) ---------- */
 .hero__legend span{letter-spacing:.08em;text-transform:uppercase}
 .hero__legend i{width:168px;background:linear-gradient(90deg,#0c1f9e,#0b6bff,#1ad9ff,#eaf7ff,#a493ff,#ed599a)}
-.hero__ai-labels{position:absolute;right:clamp(1rem,5vw,3.5rem);top:26%;display:flex;flex-direction:column;align-items:flex-end;gap:1.15rem;z-index:2;pointer-events:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(186,200,255,.48)}
+.hero__ai-labels{position:absolute;right:clamp(2.2rem,7.5vw,6.5rem);top:24%;display:flex;flex-direction:column;align-items:flex-end;gap:1.15rem;z-index:2;pointer-events:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(186,200,255,.48)}
 .hero__ai-labels span{display:block;padding:.15rem .1rem;animation:aiLabel 9s ease-in-out infinite;text-shadow:0 0 16px rgba(123,92,255,.35)}
 .hero__ai-labels span:nth-child(2){animation-delay:-3s}
 .hero__ai-labels span:nth-child(3){animation-delay:-6s}
