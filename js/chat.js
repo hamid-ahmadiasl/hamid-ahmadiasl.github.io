@@ -59,6 +59,9 @@ const I18N = {
     optional: 'Optional',
     askHint: 'You’re now writing directly to Hamid. Tell him what you’d like to ask — he’ll reply in this chat. Follow-ups stay with him until you leave this mode.',
     askReceipt: 'Your message was sent to Hamid. You can keep writing here — his reply will appear in this chat.',
+    askMessaging: 'Messaging Hamid',
+    askEditDetails: 'edit details',
+    askDismiss: 'Hide contact details',
     fallback: 'The assistant isn’t connected at the moment. You can email Hamid at ' + EMAIL + '.',
     skip: 'Skip',
     cancel: 'Cancel',
@@ -104,6 +107,9 @@ const I18N = {
     optional: 'اختیاری',
     askHint: 'اکنون مستقیماً برای حمید می‌نویسید. سؤال‌تان را بگویید — پاسخ او همین‌جا می‌آید. پیام‌های بعدی هم برای او می‌ماند تا از این حالت خارج شوید.',
     askReceipt: 'پیام‌تان برای حمید ارسال شد. می‌توانید همین‌جا ادامه دهید — پاسخ او در این گفتگو ظاهر می‌شود.',
+    askMessaging: 'پیام به حمید',
+    askEditDetails: 'ویرایش جزئیات',
+    askDismiss: 'پنهان کردن اطلاعات تماس',
     fallback: 'دستیار فعلاً وصل نیست. می‌توانید به حمید ایمیل بزنید: ' + EMAIL,
     skip: 'رد کردن',
     cancel: 'لغو',
@@ -149,6 +155,9 @@ const I18N = {
     optional: 'Facoltativo',
     askHint: 'Stai scrivendo direttamente a Hamid. Digli cosa vorresti chiedergli — ti risponderà in questa chat. I messaggi successivi restano per lui finché non esci da questa modalità.',
     askReceipt: 'Il messaggio è stato inviato a Hamid. Puoi continuare a scrivere qui — la sua risposta apparirà in questa chat.',
+    askMessaging: 'Messaggio a Hamid',
+    askEditDetails: 'modifica i dati',
+    askDismiss: 'Nascondi i dati di contatto',
     fallback: 'L’assistente non è collegato in questo momento. Puoi scrivere a Hamid: ' + EMAIL + '.',
     skip: 'Salta',
     cancel: 'Annulla',
@@ -194,6 +203,9 @@ const I18N = {
     optional: 'Valinnainen',
     askHint: 'Kirjoitat nyt suoraan Hamidille. Kerro, mitä haluaisit kysyä — hän vastaa tässä keskustelussa. Jatkokysymykset jäävät hänelle, kunnes poistut tästä tilasta.',
     askReceipt: 'Viestisi lähetettiin Hamidille. Voit jatkaa kirjoittamista tässä — hänen vastauksensa ilmestyy tähän keskusteluun.',
+    askMessaging: 'Viestit Hamidille',
+    askEditDetails: 'muokkaa tietoja',
+    askDismiss: 'Piilota yhteystiedot',
     fallback: 'Avustaja ei ole juuri nyt yhteydessä. Voit lähettää Hamidille sähköpostia: ' + EMAIL + '.',
     skip: 'Ohita',
     cancel: 'Peruuta',
@@ -288,6 +300,9 @@ function refreshChatChrome() {
   if (neu) { neu.textContent = T.newChat; neu.setAttribute('title', T.newChat); neu.setAttribute('aria-label', T.newChatAria); }
   setLabel('#chatClose', 'aria-label', T.closeChat);
   const note = root.querySelector('.chat-askmeta__note'); if (note) note.textContent = T.askNote;
+  const status = root.querySelector('.chat-askmeta__status'); if (status) status.textContent = T.askMessaging;
+  const edit = root.querySelector('#chatAskMetaEdit'); if (edit) edit.textContent = T.askEditDetails;
+  const dismiss = root.querySelector('#chatAskMetaDismiss'); if (dismiss) dismiss.setAttribute('aria-label', T.askDismiss);
   const nameLab = root.querySelector('#chatAskMeta label:first-of-type');
   if (nameLab && nameLab.childNodes[0]) nameLab.childNodes[0].textContent = T.name + ' ';
   const emailLab = root.querySelector('#chatAskMeta label:last-of-type');
@@ -313,6 +328,7 @@ function refreshChatChrome() {
   renderChips();
   relocalizeIdleChat(true);
   rerender();
+  syncAskMeta();
 }
 
 document.addEventListener('ha:langchange', (e) => {
@@ -380,6 +396,91 @@ function clearStaleProfile() {
   }
 }
 
+const STORAGE_CONTACT = 'ha-chat-contact';
+
+function readContact() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_CONTACT);
+    const o = raw ? JSON.parse(raw) : {};
+    return {
+      name: typeof o.name === 'string' ? o.name : '',
+      email: typeof o.email === 'string' ? o.email : '',
+    };
+  } catch {
+    return { name: '', email: '' };
+  }
+}
+
+function saveContact() {
+  try {
+    const name = ($('#chatName')?.value || '').trim();
+    const email = ($('#chatEmail')?.value || '').trim();
+    sessionStorage.setItem(STORAGE_CONTACT, JSON.stringify({ name, email }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function fillContact() {
+  const c = readContact();
+  const name = $('#chatName');
+  const email = $('#chatEmail');
+  if (name && !name.value) name.value = c.name;
+  if (email && !email.value) email.value = c.email;
+}
+
+const STORAGE_ASK_SENT = 'ha-chat-ask-sent';
+
+function markAskSent() {
+  state.askHandoffSent = true;
+  try { sessionStorage.setItem(STORAGE_ASK_SENT, '1'); } catch { /* ignore */ }
+}
+
+function clearAskSent() {
+  state.askHandoffSent = false;
+  try { sessionStorage.removeItem(STORAGE_ASK_SENT); } catch { /* ignore */ }
+}
+
+function hasSentAsk(messages = state.messages) {
+  if (state.askHandoffSent) return true;
+  try {
+    if (sessionStorage.getItem(STORAGE_ASK_SENT) === '1') {
+      state.askHandoffSent = true;
+      return true;
+    }
+  } catch { /* ignore */ }
+  return (messages || []).some((m) => m.source === 'ask-receipt');
+}
+
+function shouldResumeAskMode(messages = state.messages) {
+  if (hasSentAsk(messages)) return true;
+  const lastUser = [...(messages || [])].reverse().find((m) => m.role === 'user');
+  return !!(lastUser && (lastUser.source === 'ask' || lastUser.source === 'upload'));
+}
+
+function scrollLogToEnd() {
+  const log = $('#chatLog');
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+function syncAskMeta() {
+  const meta = $('#chatAskMeta');
+  if (!meta) return;
+  meta.hidden = !state.askMode;
+  const collapsed = !!(state.askMode && state.askMetaCollapsed);
+  meta.classList.toggle('is-collapsed', collapsed);
+  const bar = $('#chatAskMetaBar');
+  const full = $('#chatAskMetaFull');
+  if (bar) bar.hidden = !collapsed;
+  if (full) full.hidden = !!collapsed;
+  const status = meta.querySelector('.chat-askmeta__status');
+  if (status) status.textContent = T.askMessaging;
+  const edit = $('#chatAskMetaEdit');
+  if (edit) edit.textContent = T.askEditDetails;
+  const dismiss = $('#chatAskMetaDismiss');
+  if (dismiss) dismiss.setAttribute('aria-label', T.askDismiss);
+}
+
 function beginSession({ archiveOld = true } = {}) {
   let previous = null;
   try {
@@ -397,6 +498,7 @@ function beginSession({ archiveOld = true } = {}) {
   try {
     sessionStorage.setItem(STORAGE_SESSION, id);
     sessionStorage.removeItem(STORAGE_LOG);
+    sessionStorage.removeItem(STORAGE_ASK_SENT);
     localStorage.removeItem(STORAGE_ID);
     clearStaleProfile();
   } catch {
@@ -574,6 +676,8 @@ let state = {
   ready: false,
   open: false,
   askMode: false,
+  askMetaCollapsed: false,
+  askHandoffSent: false,
   meetingMode: false,
   sending: false,
   messages: [],
@@ -631,10 +735,20 @@ function build() {
       <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
       <div class="chat-chips" id="chatChips"></div>
       <form class="chat-askmeta" id="chatAskMeta" hidden>
-        <p class="chat-askmeta__note">${escapeHtml(T.askNote)}</p>
-        <div class="chat-askmeta__fields">
-          <label>${escapeHtml(T.name)} <input type="text" id="chatName" name="name" autocomplete="name" maxlength="80" placeholder="${escapeHtml(T.optional)}"></label>
-          <label>${escapeHtml(T.email)} <input type="email" id="chatEmail" name="email" autocomplete="email" maxlength="120" placeholder="${escapeHtml(T.optional)}"></label>
+        <div class="chat-askmeta__bar" id="chatAskMetaBar" hidden>
+          <span class="chat-askmeta__status">${escapeHtml(T.askMessaging)}</span>
+          <span class="chat-askmeta__dot" aria-hidden="true">·</span>
+          <button type="button" class="chat-askmeta__edit" id="chatAskMetaEdit">${escapeHtml(T.askEditDetails)}</button>
+        </div>
+        <div class="chat-askmeta__full" id="chatAskMetaFull">
+          <button type="button" class="chat-askmeta__dismiss" id="chatAskMetaDismiss" aria-label="${escapeHtml(T.askDismiss)}">
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M6.4 5.3 5.3 6.4 10.9 12l-5.6 5.6 1.1 1.1L12 13.1l5.6 5.6 1.1-1.1L13.1 12l5.6-5.6-1.1-1.1L12 10.9 6.4 5.3Z"/></svg>
+          </button>
+          <p class="chat-askmeta__note">${escapeHtml(T.askNote)}</p>
+          <div class="chat-askmeta__fields">
+            <label>${escapeHtml(T.name)} <input type="text" id="chatName" name="name" autocomplete="name" maxlength="80" placeholder="${escapeHtml(T.optional)}"></label>
+            <label>${escapeHtml(T.email)} <input type="email" id="chatEmail" name="email" autocomplete="email" maxlength="120" placeholder="${escapeHtml(T.optional)}"></label>
+          </div>
         </div>
       </form>
       <div class="chat-attachbar" id="chatAttachBar" hidden>
@@ -664,6 +778,19 @@ function build() {
   $('#chatLaunch', root).addEventListener('click', () => toggle());
   $('#chatClose', root).addEventListener('click', () => toggle(false));
   $('#chatNew', root).addEventListener('click', () => startNewChat());
+  $('#chatAskMetaDismiss', root).addEventListener('click', () => {
+    state.askMetaCollapsed = true;
+    saveContact();
+    syncComposer();
+    scrollLogToEnd();
+  });
+  $('#chatAskMetaEdit', root).addEventListener('click', () => {
+    state.askMetaCollapsed = false;
+    syncComposer();
+    $('#chatName')?.focus();
+  });
+  $('#chatName', root).addEventListener('change', saveContact);
+  $('#chatEmail', root).addEventListener('change', saveContact);
   $('#chatForm', root).addEventListener('submit', onSubmit);
   $('#chatAttach', root).addEventListener('click', () => $('#chatFile', root)?.click());
   $('#chatFile', root).addEventListener('change', onFilePicked);
@@ -686,12 +813,18 @@ function build() {
   root.setAttribute('lang', LANG);
   root.setAttribute('dir', LANG === 'fa' ? 'rtl' : 'ltr');
   const cached = loadLocal();
+  fillContact();
   if (cached.length && !isIdleWelcome(cached)) {
     state.messages = cached;
     state.sessionFresh = false;
+    if (shouldResumeAskMode(cached)) {
+      state.askMode = true;
+      state.askMetaCollapsed = true;
+    }
     rerender();
     syncLastTs();
     refreshChatChrome();
+    syncComposer();
   } else {
     startFreshWelcome({ keepLastTs: true });
     refreshChatChrome();
@@ -712,6 +845,9 @@ function startFreshWelcome({ keepLastTs = false } = {}) {
   state.messages = [welcomeMessage()];
   state.sessionFresh = true;
   state.askMode = false;
+  state.askMetaCollapsed = false;
+  state.askHandoffSent = false;
+  clearAskSent();
   state.meetingMode = false;
   state.flowOptions = null;
   state.flowPlaceholder = '';
@@ -864,11 +1000,12 @@ function toggle(force) {
   launch.classList.toggle('is-open', open);
   document.documentElement.classList.toggle('chat-open', open);
   if (open) {
+    if (state.askMode && hasSentAsk()) state.askMetaCollapsed = true;
     refreshChatChrome();
+    syncComposer();
     markSeen();
     requestAnimationFrame(() => {
-      const log = $('#chatLog');
-      if (log) log.scrollTop = log.scrollHeight;
+      scrollLogToEnd();
       $('#chatInput')?.focus();
     });
     document.addEventListener('keydown', trapTab);
@@ -886,13 +1023,12 @@ function syncComposer() {
   if (input) {
     if (state.meetingMode && state.flowPlaceholder) input.placeholder = state.flowPlaceholder;
     else input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
-    input.focus();
+    if (state.open) input.focus();
   }
   const chipsEl = $('#chatChips');
   chipsEl?.classList.toggle('is-ask', state.askMode);
   chipsEl?.classList.toggle('is-meeting', state.meetingMode);
-  const meta = $('#chatAskMeta');
-  if (meta) meta.hidden = !state.askMode;
+  syncAskMeta();
   const hasQuick = Array.isArray(state.flowOptions) && state.flowOptions.length > 0;
   const skip = $('#chatMeetingSkip');
   const cancel = $('#chatMeetingCancel');
@@ -958,6 +1094,9 @@ function enterAskMode(on = true) {
   const starting = on && !state.askMode;
   state.askMode = on;
   if (on) state.meetingMode = false;
+  if (on && hasSentAsk()) state.askMetaCollapsed = true;
+  else if (starting) state.askMetaCollapsed = false;
+  if (!on) state.askMetaCollapsed = false;
   syncComposer();
   if (starting) {
     appendMsg({
@@ -1163,8 +1302,12 @@ async function sendAsk(text) {
         source: 'ask-receipt',
       });
     }
+    saveContact();
+    markAskSent();
     // Stay in handoff mode so follow-up messages still go to Hamid via /ask.
+    // Fields collapse because a handoff has now been sent.
     enterAskMode(true);
+    scrollLogToEnd();
   } catch (err) {
     if (err.code === 'offline' || err.status === 503 || err.status === 502) emailFallback();
     else {
@@ -1215,6 +1358,7 @@ async function sendMeeting(text, action, opts = {}) {
         email: ($('#chatEmail')?.value || '').trim(),
       },
     });
+    saveContact();
     showTyping(false);
     if (data.message) appendMsg(data.message);
     else if (data.reply) {
