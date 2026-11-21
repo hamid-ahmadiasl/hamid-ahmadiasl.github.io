@@ -2,20 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>
+  (function(){try{
+    var k='ha-lang', ok={en:1,fa:1,it:1,fi:1};
+    var q=(new URLSearchParams(location.search).get('lang')||'').toLowerCase();
+    var lang = ok[q] ? q : '';
+    if(!lang){ var s=(localStorage.getItem(k)||'').toLowerCase(); if(ok[s]) lang=s; }
+    if(!lang){ var n=String(navigator.language||navigator.userLanguage||'').toLowerCase().split(/[-_]/)[0]; lang=ok[n]?n:'en'; }
+    var h=document.documentElement;
+    h.lang=lang; h.dir=lang==='fa'?'rtl':'ltr'; h.setAttribute('data-lang',lang);
+    if(lang!=='en') h.classList.add('i18n-pending');
+    if(ok[q]) try{localStorage.setItem(k,lang)}catch(e){}
+    setTimeout(function(){h.classList.remove('i18n-pending')},2500);
+  }catch(e){}}());
+  </script>
+  <noscript><style>html.i18n-pending body{visibility:visible}</style></noscript>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hamid Ahmadi Asl · AI &amp; Computational Science Researcher</title>
+  <title data-i18n="title.home">Hamid Ahmadi Asl · AI &amp; Computational Science Researcher</title>
   <meta name="description" content="Hamid Ahmadi Asl — AI &amp; Computational Science Researcher with a Mechanical Engineering Background. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. CFD, wind turbines, machine learning, patents and publications.">
-  <meta name="author" content="Hamid Ahmadi Asl">
+  <meta name="author" data-i18n-attr="content:name.full" content="Hamid Ahmadi Asl">
   <meta name="theme-color" content="#01040c">
   <link rel="canonical" href="https://hamid-ahmadiasl.github.io/">
 
   <!-- Open Graph / social -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Hamid Ahmadi Asl · AI &amp; Computational Science Researcher">
+  <meta property="og:title" data-i18n-attr="content:title.home" content="Hamid Ahmadi Asl · AI &amp; Computational Science Researcher">
   <meta property="og:description" content="MSc student in AI for Science and Technology at the University of Milano-Bicocca. AI &amp; Computational Science Researcher with a Mechanical Engineering Background, working on CFD, wind turbines and machine learning for engineering systems.">
   <meta property="og:url" content="https://hamid-ahmadiasl.github.io/">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Hamid Ahmadi Asl">
+  <meta name="twitter:title" data-i18n-attr="content:title.home" content="Hamid Ahmadi Asl">
   <meta name="twitter:description" content="AI &amp; Computational Science Researcher with a Mechanical Engineering Background">
 
   <!-- Favicon (inline SVG) -->
@@ -26,8 +41,8 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=24">
   <!-- Three.js via ES module import map (used in js/main.js) -->
   <script type="importmap">
   {
@@ -73,21 +88,27 @@
 <body>
   <!-- One continuous NN + CFD wallpaper (assets/wallpaper.svg), fixed behind all content below the hero -->
   <div class="wallpaper" aria-hidden="true"></div>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
 
   <header class="nav" id="nav">
-    <a class="nav__brand" href="index.html" aria-label="Hamid Ahmadi Asl — home"><img class="nav__logo" src="assets/logo.svg?v=12" alt="" width="38" height="34"></a>
-    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu"><span></span><span></span></button>
-    <nav class="nav__links" id="navLinks" aria-label="Primary">
-      <a href="index.html" class="is-active" aria-current="page"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.8V20h11V10.8"/><path d="M10 20v-6h4v6"/></svg></span>Home</a>
-      <a href="education.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span>Education</a>
-      <a href="research.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg></span>Research</a>
-      <a href="patents.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h5.5L18 8v12.5H8Z"/><path d="M13.5 3.5V8H18"/><path d="M11 12h4M11 15.5h4"/></svg></span>Patents</a>
-      <a href="experience.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M4 13h16"/></svg></span>Experience</a>
-      <a href="skills.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.2 9l5.8.6-4.4 3.8 1.3 5.6L12 16.6 6.1 19l1.3-5.6L3 9.6 8.8 9Z"/></svg></span>Skills</a>
-      <a href="insights.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span>Insights</a>
-      <a href="honors.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span>Honors</a>
-      <a href="contact.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>Contact</a>
+    <a class="nav__brand" href="index.html" aria-label="Hamid Ahmadi Asl — home" data-i18n-attr="aria-label:nav.brand"><img class="nav__logo" src="assets/logo.svg?v=12" alt="" width="38" height="34"></a>
+    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu" data-i18n-attr="aria-label:nav.toggle"><span></span><span></span></button>
+    <nav class="nav__links" id="navLinks" aria-label="Primary" data-i18n-attr="aria-label:nav.primary">
+      <a href="index.html" class="is-active" aria-current="page"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.8V20h11V10.8"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="nav.home">Home</span></a>
+      <a href="education.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span><span data-i18n="nav.education">Education</span></a>
+      <a href="research.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg></span><span data-i18n="nav.research">Research</span></a>
+      <a href="patents.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h5.5L18 8v12.5H8Z"/><path d="M13.5 3.5V8H18"/><path d="M11 12h4M11 15.5h4"/></svg></span><span data-i18n="nav.patents" data-i18n="stats.patents">Patents</span></a>
+      <a href="experience.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M4 13h16"/></svg></span><span data-i18n="nav.experience">Experience</span></a>
+      <a href="skills.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.2 9l5.8.6-4.4 3.8 1.3 5.6L12 16.6 6.1 19l1.3-5.6L3 9.6 8.8 9Z"/></svg></span><span data-i18n="nav.skills">Skills</span></a>
+      <a href="insights.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span><span data-i18n="nav.insights">Insights</span></a>
+      <a href="honors.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span><span data-i18n="nav.honors">Honors</span></a>
+      <a href="contact.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span><span data-i18n="nav.contact">Contact</span></a>
+      <div class="lang-switch" role="group" data-i18n-attr="aria-label:lang.label" aria-label="Language">
+        <button type="button" class="lang-switch__btn" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="fa" aria-pressed="false" lang="fa">FA</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="it" aria-pressed="false" lang="it">IT</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="fi" aria-pressed="false" lang="fi">FI</button>
+      </div>
     </nav>
     <div class="nav__backdrop" id="navBackdrop" hidden></div>
   </header>
@@ -101,37 +122,37 @@
            <div class="monogram"> below with:
            <img class="monogram monogram--photo" src="assets/photo.jpg" alt="Portrait of Hamid Ahmadi Asl" width="112" height="112"> -->
       <div class="monogram hero-anim" aria-hidden="true"><img src="assets/logo-dark.svg?v=12" alt="" width="54" height="49"></div>
-      <p class="eyebrow hero-anim">Engineering <span class="eyebrow__accent">meets</span> AI</p>
-      <h1 class="hero__name hero-anim">Hamid <span class="grad">Ahmadi Asl</span></h1>
-      <p class="hero__title hero-anim">AI &amp; Computational Science Researcher with a Mechanical Engineering Background</p>
-      <p class="hero__lead hero-anim">Bridging engineering knowledge and artificial intelligence to develop practical solutions for complex real-world problems. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca.</p>
-      <blockquote class="hero__quote hero-anim">“What excites me most is working on research where physics, engineering and artificial intelligence come together.”</blockquote>
+      <p class="eyebrow hero-anim" data-i18n-html="hero.eyebrow">Engineering <span class="eyebrow__accent">meets</span> AI</p>
+      <h1 class="hero__name hero-anim" data-i18n-html="name.hero">Hamid <span class="grad">Ahmadi Asl</span></h1>
+      <p class="hero__title hero-anim" data-i18n="hero.title">AI &amp; Computational Science Researcher with a Mechanical Engineering Background</p>
+      <p class="hero__lead hero-anim" data-i18n="hero.lead">Bridging engineering knowledge and artificial intelligence to develop practical solutions for complex real-world problems. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca.</p>
+      <blockquote class="hero__quote hero-anim" data-i18n="hero.quote">“What excites me most is working on research where physics, engineering and artificial intelligence come together.”</blockquote>
       <div class="hero__cta hero-anim">
         <a class="btn btn--primary" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3Zm-6 9.2v4.3C6 18.4 8.7 20 12 20s6-1.6 6-3.5v-4.3l-6 3.3-6-3.3Z"/></svg>
-          Google Scholar
+          <span data-i18n="cta.scholar">Google Scholar</span>
         </a>
         <a class="btn" href="http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.8v1.6h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6V21h-4v-5c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.700V21h-4V9.750Z"/></svg>
-          LinkedIn
+          <span data-i18n="cta.linkedin">LinkedIn</span>
         </a>
         <a class="btn" href="https://github.com/hamid-ahmadiasl" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
-          GitHub
+          <span data-i18n="cta.github">GitHub</span>
         </a>
         <a class="btn" href="mailto:hmd.ahmadiasl@gmail.com">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L4.6 7H4v.6l8 5.6 8-5.600V7h-.6L12 12.200Z"/></svg>
-          Email
+          <span data-i18n="cta.email">Email</span>
         </a>
       </div>
     </div>
-    <div class="hero__legend" aria-hidden="true"><span>Flow field → neural surrogate</span><i></i></div>
+    <div class="hero__legend" aria-hidden="true"><span data-i18n="hero.legend">flow field → data → neural surrogate</span><i></i></div>
     <div class="hero__ai-labels" aria-hidden="true">
-      <span>Physics-informed NN</span>
-      <span>surrogate model</span>
-      <span>digital twin</span>
+      <span data-i18n="hero.label.pinn">Physics-informed NN</span>
+      <span data-i18n="hero.label.surrogate">surrogate model</span>
+      <span data-i18n="hero.label.twin">digital twin</span>
     </div>
-    <a class="hero__scroll" href="#about" aria-label="Scroll to About"><span></span></a>
+    <a class="hero__scroll" href="#about" aria-label="Scroll to About" data-i18n-attr="aria-label:hero.scroll"><span></span></a>
   </section>
 
   <main id="main">
@@ -140,28 +161,28 @@
     <section class="section section--compact" id="about">
       <div class="wrap">
         <header class="section__head reveal">
-          <p class="eyebrow">01 — About</p>
-          <h2>Profile summary</h2>
+          <p class="eyebrow" data-i18n="about.kicker">01 — About</p>
+          <h2 data-i18n="about.heading">Profile summary</h2>
         </header>
         <div class="about">
           <div class="about__text reveal">
-            <p>AI and computational science researcher with a mechanical engineering background, currently pursuing an MSc in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. I build machine-learning models for physical and engineering systems, using CFD and experimental data to train surrogate models, reconstruct flow fields and explore design spaces.</p>
-            <p>My work sits where physics meets data: scientific machine learning, the data quality and generalization of small-sample surrogates, and data-driven design optimization. Years of R&amp;D and industrial experience as a Project Sub-Leader (PSL) and Design Engineer, together with patents and peer-reviewed publications, keep my models grounded in what real engineering problems need.</p>
-            <p>I'm driven by research that uses AI to accelerate scientific discovery and engineering design, and I regularly share training posts that explain ML and deep learning concepts.</p>
+            <p data-i18n="about.p1">AI and computational science researcher with a mechanical engineering background, currently pursuing an MSc in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca. I build machine-learning models for physical and engineering systems, using CFD and experimental data to train surrogate models, reconstruct flow fields and explore design spaces.</p>
+            <p data-i18n="about.p2">My work sits where physics meets data: scientific machine learning, the data quality and generalization of small-sample surrogates, and data-driven design optimization. Years of R&amp;D and industrial experience as a Project Sub-Leader (PSL) and Design Engineer, together with patents and peer-reviewed publications, keep my models grounded in what real engineering problems need.</p>
+            <p data-i18n="about.p3">I'm driven by research that uses AI to accelerate scientific discovery and engineering design, and I regularly share training posts that explain ML and deep learning concepts.</p>
           </div>
-          <ul class="stats reveal" aria-label="At a glance">
-            <li class="card"><span class="stat" data-count="3">0</span><span class="stat__label">Degrees</span></li>
-            <li class="card"><span class="stat" data-count="7">0</span><span class="stat__label">Journal papers</span></li>
+          <ul class="stats reveal" aria-label="At a glance" data-i18n-attr="aria-label:stats.aria">
+            <li class="card"><span class="stat" data-count="3">0</span><span class="stat__label" data-i18n="stats.degrees">Degrees</span></li>
+            <li class="card"><span class="stat" data-count="7">0</span><span class="stat__label" data-i18n="stats.papers">Journal papers</span></li>
             <li class="card"><span class="stat" data-count="2">0</span><span class="stat__label">Patents</span></li>
-            <li class="card"><span class="stat" data-count="1">0</span><span class="stat__label">Published book</span></li>
+            <li class="card"><span class="stat" data-count="1">0</span><span class="stat__label" data-i18n="stats.book">Published book</span></li>
           </ul>
         </div>
         <div class="journey reveal">
-          <h3 class="subhead">My journey</h3>
-          <ol class="journey__path" aria-label="From mechanical engineering to scientific machine learning">
-            <li>Mechanical Engineering</li><li>Fluid Mechanics</li><li>Numerical Simulation (CFD)</li><li>Experimental Research</li><li>Industrial R&amp;D</li><li>Artificial Intelligence</li><li>Scientific Machine Learning</li>
+          <h3 class="subhead" data-i18n="journey.heading">My journey</h3>
+          <ol class="journey__path" aria-label="From mechanical engineering to scientific machine learning" data-i18n-attr="aria-label:journey.aria">
+            <li data-i18n="journey.1">Mechanical Engineering</li><li data-i18n="journey.2">Fluid Mechanics</li><li data-i18n="journey.3">Numerical Simulation (CFD)</li><li data-i18n="journey.4">Experimental Research</li><li data-i18n="journey.5">Industrial R&amp;D</li><li data-i18n="journey.6">Artificial Intelligence</li><li data-i18n="journey.7">Scientific Machine Learning</li>
           </ol>
-          <p class="muted journey__note">Each step has expanded my technical toolkit. My focus is turning engineering problems into practical, data-driven solutions.</p>
+          <p class="muted journey__note" data-i18n="journey.note">Each step has expanded my technical toolkit. My focus is turning engineering problems into practical, data-driven solutions.</p>
         </div>
       </div>
     </section>
@@ -169,58 +190,58 @@
     <section class="section section--compact" id="explore" aria-label="Explore the site">
       <div class="wrap">
         <header class="section__head reveal">
-          <p class="eyebrow">Explore</p>
-          <h2>A closer look</h2>
-          <p class="section__sub">Jump into a section — each page has the same menu, theme and assistant.</p>
+          <p class="eyebrow" data-i18n="explore.kicker">Explore</p>
+          <h2 data-i18n="explore.heading">A closer look</h2>
+          <p class="section__sub" data-i18n="explore.sub">Jump into a section — each page has the same menu, theme and assistant.</p>
         </header>
         <div class="highlights">
           <a class="highlight card card--hover reveal" href="education.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span>
-            <h3>Education</h3>
-            <p>MSc AI4ST at UNIMIB, plus earlier mechanical engineering degrees.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.education">Education</h3>
+            <p data-i18n="explore.education.p">MSc AI4ST at UNIMIB, plus earlier mechanical engineering degrees.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="research.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg></span>
-            <h3>Research <span class="badge badge--new">New</span></h3>
-            <p>A new paper on small-sample ML surrogates, plus journal articles and a book.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3><span data-i18n="nav.research">Research</span> <span class="badge badge--new" data-i18n="badge.new">New</span></h3>
+            <p data-i18n="explore.research.p">A new paper on small-sample ML surrogates, plus journal articles and a book.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="patents.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h5.5L18 8v12.5H8Z"/><path d="M13.5 3.5V8H18"/><path d="M11 12h4M11 15.5h4"/></svg></span>
-            <h3>Patents</h3>
-            <p>Two Iranian patents: a wind-velocity duct and a blower wind tunnel.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.patents">Patents</h3>
+            <p data-i18n="explore.patents.p">Two Iranian patents: a wind-velocity duct and a blower wind tunnel.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="experience.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M4 13h16"/></svg></span>
-            <h3>Experience</h3>
-            <p>From mechanical design and CFD in industry to AI training and research.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.experience">Experience</h3>
+            <p data-i18n="explore.experience.p">From mechanical design and CFD in industry to AI training and research.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="skills.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.2 9l5.8.6-4.4 3.8 1.3 5.6L12 16.6 6.1 19l1.3-5.6L3 9.6 8.8 9Z"/></svg></span>
-            <h3>Skills</h3>
-            <p>Python, machine learning, CFD, high-performance computing and engineering design.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.skills">Skills</h3>
+            <p data-i18n="explore.skills.p">Python, machine learning, CFD, high-performance computing and engineering design.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="insights.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span>
-            <h3>Insights</h3>
-            <p>Short visual guides on AI, machine learning and AI for engineering.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.insights">Insights</h3>
+            <p data-i18n="explore.insights.p">Short visual guides on AI, machine learning and AI for engineering.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="honors.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span>
-            <h3>Honors</h3>
-            <p>Awards for the patented ducted turbine, a best-paper prize, and more.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.honors">Honors</h3>
+            <p data-i18n="explore.honors.p">Awards for the patented ducted turbine, a best-paper prize, and more.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
           <a class="highlight card card--hover reveal" href="contact.html">
             <span class="highlight__icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>
-            <h3>Contact</h3>
-            <p>Email, LinkedIn, Google Scholar and GitHub — or chat with the site assistant.</p>
-            <span class="highlight__go" aria-hidden="true">Explore →</span>
+            <h3 data-i18n="nav.contact">Contact</h3>
+            <p data-i18n="explore.contact.p">Email, LinkedIn, Google Scholar and GitHub — or chat with the site assistant.</p>
+            <span class="highlight__go" aria-hidden="true" data-i18n="explore.go">Explore →</span>
           </a>
         </div>
       </div>
@@ -228,17 +249,18 @@
   </main>
 
   <footer class="footer">
-    <p>© <span id="year">2026</span> Hamid Ahmadi Asl</p>
-    <a href="#top">Back to top ↑</a>
-    <p class="footer__note">This site records anonymous visit statistics and chat messages to improve responses; no IP addresses are stored.</p>
+    <p>© <span id="year">2026</span> <span data-i18n="name.full">Hamid Ahmadi Asl</span></p>
+    <a href="#top" data-i18n="footer.top">Back to top ↑</a>
+    <p class="footer__note" data-i18n="footer.privacy">This site records anonymous visit statistics and chat messages to improve responses; no IP addresses are stored.</p>
   </footer>
 
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <link rel="modulepreload" href="js/hero.js?v=20">
-  <script type="module" src="js/main.js?v=20"></script>
-  <script src="js/stats.js?v=20" defer></script>
-  <script type="module" src="js/chat.js?v=20"></script>
+  <link rel="modulepreload" href="js/hero.js?v=24">
+  <script src="js/i18n.js?v=24"></script>
+  <script type="module" src="js/main.js?v=24"></script>
+  <script src="js/stats.js?v=24" defer></script>
+  <script type="module" src="js/chat.js?v=24"></script>
 </body>
 </html>

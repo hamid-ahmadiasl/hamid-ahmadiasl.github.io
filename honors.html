@@ -2,20 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>
+  (function(){try{
+    var k='ha-lang', ok={en:1,fa:1,it:1,fi:1};
+    var q=(new URLSearchParams(location.search).get('lang')||'').toLowerCase();
+    var lang = ok[q] ? q : '';
+    if(!lang){ var s=(localStorage.getItem(k)||'').toLowerCase(); if(ok[s]) lang=s; }
+    if(!lang){ var n=String(navigator.language||navigator.userLanguage||'').toLowerCase().split(/[-_]/)[0]; lang=ok[n]?n:'en'; }
+    var h=document.documentElement;
+    h.lang=lang; h.dir=lang==='fa'?'rtl':'ltr'; h.setAttribute('data-lang',lang);
+    if(lang!=='en') h.classList.add('i18n-pending');
+    if(ok[q]) try{localStorage.setItem(k,lang)}catch(e){}
+    setTimeout(function(){h.classList.remove('i18n-pending')},2500);
+  }catch(e){}}());
+  </script>
+  <noscript><style>html.i18n-pending body{visibility:visible}</style></noscript>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Honors &amp; Languages · Hamid Ahmadi Asl</title>
+  <title data-i18n="title.honors">Honors &amp; Languages · Hamid Ahmadi Asl</title>
   <meta name="description" content="Honors and awards received by Hamid Ahmadi Asl, plus language proficiency in English and Italian.">
-  <meta name="author" content="Hamid Ahmadi Asl">
+  <meta name="author" data-i18n-attr="content:name.full" content="Hamid Ahmadi Asl">
   <meta name="theme-color" content="#01040c">
   <link rel="canonical" href="https://hamid-ahmadiasl.github.io/honors.html">
 
   <!-- Open Graph / social -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Honors &amp; Languages · Hamid Ahmadi Asl">
+  <meta property="og:title" data-i18n-attr="content:title.honors" content="Honors &amp; Languages · Hamid Ahmadi Asl">
   <meta property="og:description" content="Recognition for a patented ducted wind turbine, a best-paper award, and the Khwarizmi Youth Awards, plus language proficiency.">
   <meta property="og:url" content="https://hamid-ahmadiasl.github.io/honors.html">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Honors · Hamid Ahmadi Asl">
+  <meta name="twitter:title" data-i18n-attr="content:title.honors" content="Honors · Hamid Ahmadi Asl">
   <meta name="twitter:description" content="Awards, recognition, and language proficiency.">
 
   <!-- Favicon (inline SVG) -->
@@ -26,27 +41,33 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=24">
 
 </head>
 <body class="page--sub">
   <div class="wallpaper" aria-hidden="true"></div>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
 
   <header class="nav" id="nav">
-    <a class="nav__brand" href="index.html" aria-label="Hamid Ahmadi Asl — home"><img class="nav__logo" src="assets/logo.svg?v=12" alt="" width="38" height="34"></a>
-    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu"><span></span><span></span></button>
-    <nav class="nav__links" id="navLinks" aria-label="Primary">
-      <a href="index.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.8V20h11V10.8"/><path d="M10 20v-6h4v6"/></svg></span>Home</a>
-      <a href="education.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span>Education</a>
-      <a href="research.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg></span>Research</a>
-      <a href="patents.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h5.5L18 8v12.5H8Z"/><path d="M13.5 3.5V8H18"/><path d="M11 12h4M11 15.5h4"/></svg></span>Patents</a>
-      <a href="experience.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M4 13h16"/></svg></span>Experience</a>
-      <a href="skills.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.2 9l5.8.6-4.4 3.8 1.3 5.6L12 16.6 6.1 19l1.3-5.6L3 9.6 8.8 9Z"/></svg></span>Skills</a>
-      <a href="insights.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span>Insights</a>
-      <a href="honors.html" class="is-active" aria-current="page"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span>Honors</a>
-      <a href="contact.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>Contact</a>
+    <a class="nav__brand" href="index.html" aria-label="Hamid Ahmadi Asl — home" data-i18n-attr="aria-label:nav.brand"><img class="nav__logo" src="assets/logo.svg?v=12" alt="" width="38" height="34"></a>
+    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu" data-i18n-attr="aria-label:nav.toggle"><span></span><span></span></button>
+    <nav class="nav__links" id="navLinks" aria-label="Primary" data-i18n-attr="aria-label:nav.primary">
+      <a href="index.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.8V20h11V10.8"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="nav.home">Home</span></a>
+      <a href="education.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/><path d="M7 12.2v4.3c0 .2 2.2 2 5 2s5-1.8 5-2v-4.3"/><path d="M21 10v5"/></svg></span><span data-i18n="nav.education">Education</span></a>
+      <a href="research.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg></span><span data-i18n="nav.research">Research</span></a>
+      <a href="patents.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h5.5L18 8v12.5H8Z"/><path d="M13.5 3.5V8H18"/><path d="M11 12h4M11 15.5h4"/></svg></span><span data-i18n="nav.patents">Patents</span></a>
+      <a href="experience.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M4 13h16"/></svg></span><span data-i18n="nav.experience">Experience</span></a>
+      <a href="skills.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.2 9l5.8.6-4.4 3.8 1.3 5.6L12 16.6 6.1 19l1.3-5.6L3 9.6 8.8 9Z"/></svg></span><span data-i18n="nav.skills">Skills</span></a>
+      <a href="insights.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3Z"/></svg></span><span data-i18n="nav.insights">Insights</span></a>
+      <a href="honors.html" class="is-active" aria-current="page"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M9.2 13.5 8 21l4-2.2L16 21l-1.2-7.5"/></svg></span><span data-i18n="nav.honors">Honors</span></a>
+      <a href="contact.html"><span class="nav__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span><span data-i18n="nav.contact">Contact</span></a>
+      <div class="lang-switch" role="group" data-i18n-attr="aria-label:lang.label" aria-label="Language">
+        <button type="button" class="lang-switch__btn" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="fa" aria-pressed="false" lang="fa">FA</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="it" aria-pressed="false" lang="it">IT</button>
+        <button type="button" class="lang-switch__btn" data-set-lang="fi" aria-pressed="false" lang="fi">FI</button>
+      </div>
     </nav>
     <div class="nav__backdrop" id="navBackdrop" hidden></div>
   </header>
@@ -54,10 +75,10 @@
   <main id="main">
     <section class="page-head">
       <div class="wrap">
-        <p class="crumbs"><a href="index.html">Home</a> <span aria-hidden="true">/</span> Honors</p>
-        <p class="eyebrow">Honors &amp; Awards</p>
-        <h1>Recognition &amp; <span class="grad">languages</span></h1>
-        <p class="section__sub">Awards for research and invention, plus language proficiency.</p>
+        <p class="crumbs"><a href="index.html" data-i18n="nav.home">Home</a> <span aria-hidden="true">/</span> <span data-i18n="nav.honors">Honors</span></p>
+        <p class="eyebrow" data-i18n="honors.kicker">Honors &amp; Awards</p>
+        <h1 data-i18n-html="honors.h1">Recognition &amp; <span class="grad">languages</span></h1>
+        <p class="section__sub" data-i18n="honors.sub">Awards for research and invention, plus language proficiency.</p>
       </div>
     </section>
     <section class="section section--page">
@@ -66,39 +87,39 @@
           <li class="card card--hover reveal">
             <span class="honors__icon" aria-hidden="true">★</span>
             <div>
-              <p>Accreditation and scoring for commercialization of the patented ducted wind turbine by the “Scientific and Industrial Research Organization of Iran; Ministry of Science, Research and Technology”.</p>
-              <a class="link" href="https://drive.google.com/file/d/1Frs5xNoRcG-92NlFCKhwUpDcqrMAy7sH/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+              <p data-i18n="honors.a1">Accreditation and scoring for commercialization of the patented ducted wind turbine by the “Scientific and Industrial Research Organization of Iran; Ministry of Science, Research and Technology”.</p>
+              <a class="link" href="https://drive.google.com/file/d/1Frs5xNoRcG-92NlFCKhwUpDcqrMAy7sH/view?usp=sharing" target="_blank" rel="noopener noreferrer"><span data-i18n="honors.view">View document</span> <span aria-hidden="true">↗</span></a>
             </div>
           </li>
           <li class="card card--hover reveal">
             <span class="honors__icon" aria-hidden="true">★</span>
             <div>
-              <p>Rewarded for the Best Paper of the year by South Tehran Branch, Azad University.</p>
-              <a class="link" href="https://drive.google.com/file/d/1SrZJFeyRPnj1IJfWbp0FDyvausBzxSbk/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+              <p data-i18n="honors.a2">Rewarded for the Best Paper of the year by South Tehran Branch, Azad University.</p>
+              <a class="link" href="https://drive.google.com/file/d/1SrZJFeyRPnj1IJfWbp0FDyvausBzxSbk/view?usp=sharing" target="_blank" rel="noopener noreferrer"><span data-i18n="honors.view">View document</span> <span aria-hidden="true">↗</span></a>
             </div>
           </li>
           <li class="card card--hover reveal">
             <span class="honors__icon" aria-hidden="true">★</span>
             <div>
-              <p>The Regional Selection of the Sixth Khwarizmi Youth Awards.</p>
-              <a class="link" href="https://drive.google.com/file/d/1JCJWVPdCuCC6oNVRT4EsljgoyIyHA_2S/view?usp=sharing" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+              <p data-i18n="honors.a3">The Regional Selection of the Sixth Khwarizmi Youth Awards.</p>
+              <a class="link" href="https://drive.google.com/file/d/1JCJWVPdCuCC6oNVRT4EsljgoyIyHA_2S/view?usp=sharing" target="_blank" rel="noopener noreferrer"><span data-i18n="honors.view">View document</span> <span aria-hidden="true">↗</span></a>
             </div>
           </li>
         </ul>
 
         <header class="section__head section__head--sub reveal" id="languages">
-          <p class="eyebrow">Languages</p>
-          <h2>Language proficiency</h2>
+          <p class="eyebrow" data-i18n="honors.langs">Languages</p>
+          <h2 data-i18n="honors.langprof">Language proficiency</h2>
         </header>
         <div class="grid grid--2">
           <article class="card card--hover reveal">
-            <h3>English</h3>
-            <p class="muted">Overall band score: 7.0 · exam date 24 Oct 2024</p>
-            <a class="link" href="https://drive.google.com/file/d/1bBJAlTU_nBPaVxbW81sdn-YZHPj_QFDo/view?usp=drive_link" target="_blank" rel="noopener noreferrer">View document <span aria-hidden="true">↗</span></a>
+            <h3 data-i18n="honors.en">English</h3>
+            <p class="muted" data-i18n="honors.en.score">Overall band score: 7.0 · exam date 24 Oct 2024</p>
+            <a class="link" href="https://drive.google.com/file/d/1bBJAlTU_nBPaVxbW81sdn-YZHPj_QFDo/view?usp=drive_link" target="_blank" rel="noopener noreferrer"><span data-i18n="honors.view">View document</span> <span aria-hidden="true">↗</span></a>
           </article>
           <article class="card card--hover reveal">
-            <h3>Italian</h3>
-            <p class="muted">A1 · currently learning at A2 level</p>
+            <h3 data-i18n="honors.it">Italian</h3>
+            <p class="muted" data-i18n="honors.it.level">A1 · currently learning at A2 level</p>
           </article>
         </div>
       </div>
@@ -106,16 +127,17 @@
   </main>
 
   <footer class="footer">
-    <p>© <span id="year">2026</span> Hamid Ahmadi Asl</p>
-    <a href="#main">Back to top ↑</a>
-    <p class="footer__note">This site records anonymous visit statistics and chat messages to improve responses; no IP addresses are stored.</p>
+    <p>© <span id="year">2026</span> <span data-i18n="name.full">Hamid Ahmadi Asl</span></p>
+    <a href="#main" data-i18n="footer.top">Back to top ↑</a>
+    <p class="footer__note" data-i18n="footer.privacy">This site records anonymous visit statistics and chat messages to improve responses; no IP addresses are stored.</p>
   </footer>
 
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <script type="module" src="js/main.js?v=20"></script>
-  <script src="js/stats.js?v=20" defer></script>
-  <script type="module" src="js/chat.js?v=20"></script>
+  <script src="js/i18n.js?v=24"></script>
+  <script type="module" src="js/main.js?v=24"></script>
+  <script src="js/stats.js?v=24" defer></script>
+  <script type="module" src="js/chat.js?v=24"></script>
 </body>
 </html>

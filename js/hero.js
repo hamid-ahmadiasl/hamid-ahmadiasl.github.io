@@ -1,20 +1,20 @@
-/* Hero scene: a procedurally built 3-bladed wind turbine with a spinning rotor, CFD streamlines of
-   tiny binary 0/1 glyphs through the rotor disk into a swirling helical wake with tip vortices
-   (advected particles, cyan/blue, fading along each trail) that dissolve into a breathing neural
-   network with pulses, merged in depth and lifted by UnrealBloom. Loaded lazily by main.js; failure
-   falls back to CSS. */
+/* Hero scene: the neural network IS the wind that drives the turbine.
+   Layers of nodes span the hero left → right; connections are smooth CFD-like
+   streamlines (bezier / Catmull-Rom), not straight edges. Signal pulses and a
+   mix of thin glowing lines + 0/1 glyphs travel those curves, converge around
+   the rotor on the right, and visibly drive its rotation. Gusts are activation
+   bursts that propagate layer by layer. No solid output block.
+   URL flags: ?streams=mixed|glyphs|lines  ?noadapt  ?gust=1 (hold a mid-gust). */
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
-import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 
 const rnd = Math.random;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
 
 function webglAvailable() {
   try {
@@ -23,85 +23,42 @@ function webglAvailable() {
   } catch (e) { return false; }
 }
 
-const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
-
 export async function initHero({ reduceMotion, isSmall }) {
   const tInit = performance.now();
   const canvas = document.getElementById('scene');
   if (!canvas || !webglAvailable()) throw new Error('no-webgl');
   const params = new URLSearchParams(location.search);
   const adaptive = !params.has('noadapt');
+  const streamQ = (params.get('streams') || 'mixed').toLowerCase();
+  const streamMode = streamQ === 'glyphs' || streamQ === 'lines' ? streamQ : 'mixed';
+  const holdGust = params.has('gust');
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-  const BG = 0x01040c;                                          // near-black navy (sampled from the LinkedIn cover)
+  const BG = 0x01040c;
   renderer.setClearColor(BG, 1);
   let pixelRatio = Math.min(window.devicePixelRatio || 1, isSmall ? 1.25 : 1.5);
   renderer.setPixelRatio(pixelRatio);
 
   const scene = new THREE.Scene(); scene.background = new THREE.Color(BG);
+  scene.fog = new THREE.FogExp2(BG, 0.014);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 120);
-  const stage = new THREE.Group(); scene.add(stage);           // everything lives here (offset right of the text on desktop)
-  const rig = new THREE.Group(); stage.add(rig);               // turbine frame: x = wind axis, hub at the origin, rotor radius = 1
-  const YAW = 0.5;                                            // 3/4 view of the rotor disk
+  const stage = new THREE.Group(); scene.add(stage);
 
-  /* ===== Turbine flow (cheap analytic model): actuator-disk induction with streamtube expansion,
-     a counter-rotating wake swirl, and tip vortices shed from the blade tips along helices ===== */
-  const U = 0.75, AIND = 0.3, OMEGA = 1.45, CX = 0.25, XR = -0.22;   // free stream, induction, rotor rad/s, rotor plane x
-  let simT = 0, rotorAng = 0;
-  let vx = 0, vy = 0, vz = 0, speed = 0;                        // scratch outputs of flowAt
-  const wakeR = x => { const d = x - XR, s = d / Math.sqrt(d * d + CX), rec = Math.exp(-Math.max(0, d) / 7);
-    return Math.sqrt((1 - AIND) / (1 - AIND * (1 + s) * rec)); };
-  function flowAt(x, y, z) {
-    const d = x - XR, q = d * d + CX, s = d / Math.sqrt(q), rec = Math.exp(-Math.max(0, d) / 7);
-    const ind = AIND * (1 + s) * rec, Rw = Math.sqrt((1 - AIND) / (1 - ind));
-    const r = Math.hypot(y, z) + 1e-6, g = 1 - smooth(0.86 * Rw, 1.14 * Rw, r);
-    const dud = U * AIND * rec * CX / (q * Math.sqrt(q));       // axial deceleration gradient -> radial expansion
-    const ua = U * (1 - ind * g) + U * 0.06 * (1 - g) * smooth(-1, 1, d) * Math.exp(-(r - Rw) * (r - Rw) * 2);
-    const ur = r < Rw ? 0.5 * r * dud : 0.5 * Rw * Rw / r * dud;
-    const wt = -0.34 * U * (r / Rw) * g * smooth(-0.1, 0.5, d) * Math.exp(-Math.max(0, d) / 9);   // swirl opposite to the rotor
-    vx = ua; vy = (ur * y - wt * z) / r; vz = (ur * z + wt * y) / r; speed = Math.hypot(ua, ur, wt);
-  }
+  const YAW = 0.32;
+  const OMEGA = 1.32, XR = -0.22;
+  let simT = 0, rotorAng = 0, rotorSpeed = OMEGA, gust = 0, wave = 0, nacellePulse = 0, flowE = 0.6;
 
-  /* ===== Streamline particles with trails of tiny binary glyphs (first NTIP are tip-vortex tracers).
-     0/1 are pre-rendered into a 2-cell canvas atlas and drawn as screen-space quads, tinted cyan/blue
-     and faded along each trail. Fewer, denser streams than the old line ribbons; fewer still on mobile. ===== */
-  let N = isSmall ? 80 : 170;
-  const K = isSmall ? 20 : 28;                                 // glyphs per trail (dense packing)
-  const NTIP = Math.round(N * 0.17);
-  let X0 = -6, X1 = 6, YH = 3.2, ZH = 2.6, XC = 1.8;            // inlet / outlet / spawn extents (rig units), set in layout
-  const T = new THREE.Vector3(3, -0.6, 0);                     // where the wake is drawn to (the network), rig units
-  const P = {
-    x: new Float32Array(N), y: new Float32Array(N), z: new Float32Array(N), age: new Float32Array(N), life: new Float32Array(N),
-    inten: new Float32Array(N), sp: new Float32Array(N), wk: new Float32Array(N), psi: new Float32Array(N)
-  };
-  const hist = new Float32Array(N * K * 3);
-  const col = new Float32Array(N * K * 3);
-  const bits = new Float32Array(N * K);
-  const fade = new Float32Array(K);
-  for (let k = 0; k < K; k++) fade[k] = k === K - 1 ? 0 : Math.pow(1 - k / (K - 1), 1.15);
+  /* cyan → violet → pink along the span */
+  const pal = [[.18, .82, 1.0], [.32, .55, 1.0], [.55, .34, 1.0], [.82, .26, .92], [.98, .28, .62], [1.0, .34, .50]];
+  const rgb = [0, 0, 0];
+  const palAt = (t, o) => { t = clamp(t, 0, 1); const f = t * (pal.length - 1), i = Math.min(pal.length - 2, Math.floor(f)), u = f - i;
+    for (let c = 0; c < 3; c++) o[c] = pal[i][c] + (pal[i + 1][c] - pal[i][c]) * u; return o; };
 
-  function spawn(i, anywhere) {
-    let x, y, z;
-    if (i < NTIP) {                                            // released at a blade tip as it sweeps past -> helical loci
-      const a = anywhere ? rnd() * 4 : 0, b = (rnd() * 3) | 0;
-      x = XR + 0.03 + a * U * 0.5;
-      const th = rotorAng - OMEGA * a + b * 2.0944 + (rnd() - 0.5) * 0.04, rr = wakeR(x) * (0.97 + rnd() * 0.05);
-      y = rr * Math.cos(th); z = rr * Math.sin(th);
-      P.age[i] = a; P.life[i] = 5 + rnd() * 3; P.psi[i] = rnd() * 6.28;
-    } else {
-      x = anywhere ? X0 + rnd() * (X1 - X0) : X0 - rnd() * 0.6;
-      if (rnd() < 0.5) { const rr = 1.35 * Math.sqrt(rnd()), th = rnd() * 6.28; y = rr * Math.cos(th); z = rr * Math.sin(th); }
-      else { y = (rnd() * 2 - 1) * YH; z = (rnd() * 2 - 1) * ZH; }
-      P.age[i] = 0; P.life[i] = 14 + rnd() * 10;
-    }
-    P.x[i] = x; P.y[i] = y; P.z[i] = z;
-    const b = i * K * 3, bb = i * K;
-    for (let k = 0; k < K; k++) {
-      hist[b + k * 3] = x; hist[b + k * 3 + 1] = y; hist[b + k * 3 + 2] = z;
-      bits[bb + k] = rnd() < 0.5 ? 0 : 1;
-    }
-  }
+  /* Dim the field behind the left text column (desktop). Mobile text sits under the CSS glow. */
+  let zoneA = -2.2, zoneB = 0.85;
+  const zoneK = x => isSmall ? 1 : (0.24 + 0.76 * smooth(zoneA, zoneB, x));
 
+  /* ===== Glyph atlas (0/1) — instanced screen-space quads along a trail ===== */
   function makeGlyphAtlas() {
     const cell = 64, c = document.createElement('canvas');
     c.width = cell * 2; c.height = cell;
@@ -124,7 +81,18 @@ export async function initHero({ reduceMotion, isSmall }) {
   }
   const glyphAtlas = makeGlyphAtlas();
 
-  /* One screen-space glyph quad per trail point, oriented along the local segment and sized in CSS pixels. */
+  let N = isSmall ? 56 : 110;
+  const K = isSmall ? 14 : 18;
+  const P = {
+    path: new Int16Array(N), s: new Float32Array(N), age: new Float32Array(N),
+    life: new Float32Array(N), inten: new Float32Array(N), sp: new Float32Array(N), bit: new Float32Array(N)
+  };
+  const hist = new Float32Array(N * K * 3);
+  const col = new Float32Array(N * K * 3);
+  const bits = new Float32Array(N * K);
+  const fade = new Float32Array(K);
+  for (let k = 0; k < K; k++) fade[k] = k === K - 1 ? 0 : Math.pow(1 - k / (K - 1), 1.12);
+
   const ribGeo = new THREE.InstancedBufferGeometry();
   ribGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0], 3));
   const hBuf = new THREE.InstancedInterleavedBuffer(hist, 3, 1).setUsage(THREE.DynamicDrawUsage);
@@ -139,7 +107,7 @@ export async function initHero({ reduceMotion, isSmall }) {
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     uniforms: {
       uRes: { value: new THREE.Vector2(1, 1) },
-      uPx: { value: isSmall ? 7.0 : 8.0 },
+      uPx: { value: isSmall ? 7.2 : 8.6 },
       uAtlas: { value: glyphAtlas }
     },
     vertexShader: `attribute vec3 iA; attribute vec3 iB; attribute vec3 cA; attribute float aBit;
@@ -161,91 +129,39 @@ export async function initHero({ reduceMotion, isSmall }) {
       void main(){ float a=texture2D(uAtlas,vUv).a; if(a<0.04) discard; gl_FragColor=vec4(vC*a,1.); }`
   });
   const streams = new THREE.Mesh(ribGeo, ribMat);
-  streams.frustumCulled = false; streams.renderOrder = 3;
-  rig.add(streams);
+  streams.frustumCulled = false; streams.renderOrder = 4;
+  stage.add(streams);
   let nAct = N;
 
-  // velocity colormap stays in cyan / blue (deep indigo -> blue -> bright cyan)
-  const stops = [[0, .06, .18, .55], [.35, .06, .48, .98], [.68, .18, .82, 1.0], [1, .62, .96, 1.0]];
-  function cmap(t, out) {
-    for (let s = 1; s < stops.length; s++) {
-      if (t <= stops[s][0]) {
-        const a = stops[s - 1], b = stops[s], f = (t - a[0]) / (b[0] - a[0]);
-        out[0] = a[1] + (b[1] - a[1]) * f; out[1] = a[2] + (b[2] - a[2]) * f; out[2] = a[3] + (b[3] - a[3]) * f; return;
-      }
-    }
-    out[0] = .62; out[1] = .96; out[2] = 1;
-  }
-  const rgb = [0, 0, 0];
-  const GAIN = isSmall ? 1.15 : 1.05;
-  let recAcc = 0, doShift = true;
+  const nSeg = N * (K - 1);
+  const linePos = new Float32Array(nSeg * 2 * 3);
+  const lineCol = new Float32Array(nSeg * 2 * 3);
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3).setUsage(THREE.DynamicDrawUsage));
+  lineGeo.setAttribute('color', new THREE.BufferAttribute(lineCol, 3).setUsage(THREE.DynamicDrawUsage));
+  const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 1, fog: true });
+  const lineMesh = new THREE.LineSegments(lineGeo, lineMat);
+  lineMesh.frustumCulled = false; lineMesh.renderOrder = 3;
+  stage.add(lineMesh);
 
-  function stepParticles(dt) {
-    simT += dt; rotorAng = OMEGA * simT;
-    recAcc += dt; doShift = recAcc >= 0.032; if (doShift) recAcc = 0;
-    for (let i = 0; i < nAct; i++) {
-      let x = P.x[i], y = P.y[i], z = P.z[i];
-      flowAt(x, y, z);
-      let dx = vx, dy = vy, dz = vz, wk = 0;
-      if (i < NTIP) {                                          // tip vortex: tracers loop round the core in the meridional plane
-        const a = P.age[i], om = -5.5 * Math.exp(-a / 5), rho = 0.03 + 0.06 * (1 - Math.exp(-a / 2));
-        P.psi[i] += om * dt;
-        const r = Math.hypot(y, z) + 1e-6, ox = -rho * om * Math.sin(P.psi[i]), orr = rho * om * Math.cos(P.psi[i]);
-        dx += ox; dy += orr * y / r; dz += orr * z / r;
-        wk = Math.exp(-a / 3.2) * smooth(0, 0.25, a);
-      }
-      x += dx * dt; y += dy * dt; z += dz * dt;
-      const k = smooth(XC, X1 - 0.6, x) * 0.9;                 // far wake: the flow is drawn into the network
-      if (k > 0) { y += (T.y - y) * k * dt; z += (T.z - z) * k * dt; }
-      P.x[i] = x; P.y[i] = y; P.z[i] = z; P.sp[i] = speed; P.wk[i] += (wk - P.wk[i]) * 0.3;
-      P.age[i] += dt;
-      if (x > X1 || Math.abs(y) > YH * 1.6 || Math.abs(z) > ZH * 1.8 || P.age[i] > P.life[i]) spawn(i, false);
-      else {
-        const b = i * K * 3, bb = i * K;
-        if (doShift) {
-          hist.copyWithin(b + 3, b, b + (K - 1) * 3);
-          bits.copyWithin(bb + 1, bb, bb + K - 1);
-          bits[bb] = rnd() < 0.5 ? 0 : 1;
-        }
-        hist[b] = x; hist[b + 1] = y; hist[b + 2] = z;
-      }
-      P.inten[i] = smooth(X0, X0 + 3.2, P.x[i]) * (1 - smooth(X1 - 1.6, X1, P.x[i])) *
-                   smooth(0, 0.5, P.age[i]) * (1 - smooth(P.life[i] - 1.2, P.life[i], P.age[i]));
-    }
-  }
-  function writeColors() {
-    for (let i = 0; i < nAct; i++) {
-      // free stream ~ bright cyan, slowed wake = deeper blue; tip vortices stay in the same cyan/blue range
-      const cv = clamp((P.sp[i] / U - 0.35) / 0.75, 0, 1) * 0.7 + P.wk[i] * 0.3;
-      cmap(clamp(cv, 0, 1), rgb);
-      const g = P.inten[i] * GAIN * (0.85 + 0.55 * P.wk[i]), b = i * K * 3;
-      for (let k = 0; k < K; k++) {
-        const f = fade[k] * g, o = b + k * 3;
-        col[o] = rgb[0] * f; col[o + 1] = rgb[1] * f; col[o + 2] = rgb[2] * f;
-      }
-    }
-    hBuf.needsUpdate = true; cBuf.needsUpdate = true; bBuf.needsUpdate = true;
-  }
-
-  /* ===== Wind turbine, built procedurally (low-poly): tapered tower, nacelle, spinner, three tapered,
-     twisted blades. Translucent shell with a fresnel edge glow + fine glowing wireframe. ===== */
-  const turb = new THREE.Group(); rig.add(turb);
+  /* ===== Turbine (procedural HAWT): brighter, still elegant — tower, nacelle, spinner, twisted blades ===== */
+  const turb = new THREE.Group(); stage.add(turb);
   const shell = (fadeY, kk = 1) => new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uFade: { value: fadeY }, uK: { value: kk } },
     vertexShader: `varying vec3 vN; varying vec3 vV; varying float vY;
       void main(){ vY=position.y; vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
     fragmentShader: `varying vec3 vN; varying vec3 vV; varying float vY; uniform float uFade; uniform float uK;
-      void main(){ float f=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.2);
-        vec3 rim=mix(vec3(.18,.78,1.),vec3(.58,.40,1.),f);
+      void main(){ float f=pow(1.-abs(dot(normalize(vN),normalize(vV))),1.85);
+        vec3 rim=mix(vec3(.32,.86,1.),vec3(.70,.46,1.),clamp(f,0.,1.));
+        vec3 fill=vec3(.05,.11,.20);
         float fd = uFade < -50. ? 1. : smoothstep(uFade, uFade+1.3, vY);
-        gl_FragColor=vec4(vec3(.03,.07,.15)+rim*(.12+f*2.2)*uK,(.55+.45*f)*fd); }`
+        gl_FragColor=vec4(fill+rim*(.26+f*2.15)*uK, (.70+.34*f)*fd); }`
   });
   const wireMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
   const wire = (pts, cols) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); const l = new THREE.LineSegments(g, wireMat); l.renderOrder = 8; return l; };
-  const CY = [.30, .85, 1.0], VI = [.55, .40, 1.0];
+  const CY = [.40, .90, 1.0], VI = [.70, .46, 1.0], PK = [1.0, .36, .62];
   const mixc = (a, b, t, k) => [(a[0] + (b[0] - a[0]) * t) * k, (a[1] + (b[1] - a[1]) * t) * k, (a[2] + (b[2] - a[2]) * t) * k];
-  // surface of revolution about the x axis from a [radius, x] profile (+ matching wireframe)
   function revolve(prof, seg, ringEvery) {
     const pos = [], idx = [], wp = [], wc = [];
     prof.forEach(([r, x]) => { for (let j = 0; j <= seg; j++) { const a = j / seg * 6.2832; pos.push(x, r * Math.cos(a), r * Math.sin(a)); } });
@@ -253,32 +169,29 @@ export async function initHero({ reduceMotion, isSmall }) {
       const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, a + 1, b, b + 1);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-    const c = mixc(CY, VI, .3, .8);
+    const c = mixc(CY, VI, .3, 1.15);
     for (let j = 0; j < seg; j += 2) for (let i = 0; i < prof.length - 1; i++) { const a = (i * (seg + 1) + j) * 3, b = a + (seg + 1) * 3; wp.push(...pos.slice(a, a + 3), ...pos.slice(b, b + 3)); wc.push(...c, ...c); }
     for (let i = 0; i < prof.length; i += ringEvery) for (let j = 0; j < seg; j++) { const a = (i * (seg + 1) + j) * 3; wp.push(...pos.slice(a, a + 3), ...pos.slice(a + 3, a + 6)); wc.push(...c, ...c); }
     return [g, wire(wp, wc)];
   }
   const addShell = (g, fadeY = -100, kk = 1) => { const m = new THREE.Mesh(g, shell(fadeY, kk)); m.renderOrder = 7; return m; };
-  // tower (tapered, fades out towards the ground)
   const HT = 2.05, TX = XR + 0.3;
-  { const g = new THREE.CylinderGeometry(0.036, 0.075, HT, 14, 1, true); const m = addShell(g, -HT / 2, 0.5); m.position.set(TX, -0.08 - HT / 2, 0); turb.add(m);
+  { const g = new THREE.CylinderGeometry(0.036, 0.075, HT, 14, 1, true); const m = addShell(g, -HT / 2, 0.7); m.position.set(TX, -0.08 - HT / 2, 0); turb.add(m);
     const wp = [], wc = [];
     for (let j = 0; j < 8; j++) { const a = j / 8 * 6.2832, ca_ = Math.cos(a), sa_ = Math.sin(a);
-      wp.push(TX + .075 * ca_, -0.08 - HT, .075 * sa_, TX + .036 * ca_, -0.08, .036 * sa_); wc.push(0, 0, 0, ...mixc(CY, VI, .2, .55)); }
+      wp.push(TX + .075 * ca_, -0.08 - HT, .075 * sa_, TX + .036 * ca_, -0.08, .036 * sa_); wc.push(0, 0, 0, ...mixc(CY, VI, .2, .85)); }
     turb.add(wire(wp, wc)); }
-  // nacelle (fixed) and spinner (rotates with the rotor)
   { const [g, w] = revolve([[0.0, XR + 0.03], [0.07, XR + 0.05], [0.086, XR + 0.14], [0.09, XR + 0.5], [0.078, XR + 0.64], [0.035, XR + 0.7], [0.0, XR + 0.71]], 16, 2);
-    turb.add(addShell(g), w); }
+    turb.add(addShell(g, -100, 1.02), w); }
   const rotor = new THREE.Group(); rotor.position.x = XR; turb.add(rotor);
-  { const [g, w] = revolve([[0.0, -0.2], [0.03, -0.185], [0.055, -0.14], [0.072, -0.07], [0.08, 0.0], [0.078, 0.04]], 16, 2); rotor.add(addShell(g), w); }
-  // blade: span along +y, chord in the rotor plane (leading edge towards +z, the direction of rotation), twisted
+  { const [g, w] = revolve([[0.0, -0.2], [0.03, -0.185], [0.055, -0.14], [0.072, -0.07], [0.08, 0.0], [0.078, 0.04]], 16, 2); rotor.add(addShell(g, -100, 1.05), w); }
   function blade() {
     const S = 14, C = 10, pos = [], idx = [], wp = [], wc = [], ring = [];
     for (let s = 0; s <= S; s++) {
       const u = s / S, rr = 0.06 + 0.92 * u;
       const chord = u < 0.18 ? 0.06 + 0.12 * smooth(0, 0.18, u) : 0.18 - 0.14 * Math.pow((u - 0.18) / 0.82, 0.8);
       const thick = u < 0.25 ? 0.5 - 0.38 * smooth(0, 0.25, u) : 0.12;
-      const beta = 0.3 * Math.pow(1 - u, 1.5) + 0.03, dX = Math.sin(beta), dZ = -Math.cos(beta);   // LE -> TE direction
+      const beta = 0.3 * Math.pow(1 - u, 1.5) + 0.03, dX = Math.sin(beta), dZ = -Math.cos(beta);
       const r0 = [];
       for (let k = 0; k < C; k++) {
         const a = k / C * 6.2832, cc = 0.5 * Math.cos(a), tt = 0.5 * Math.sin(a) * thick * (1.15 - 0.6 * (cc + 0.5));
@@ -292,339 +205,572 @@ export async function initHero({ reduceMotion, isSmall }) {
     for (let k = 0; k < C; k++) idx.push(ring[S][k], tip, ring[S][(k + 1) % C]);
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     const P3 = v => pos.slice(v * 3, v * 3 + 3);
-    for (let s = 0; s < S; s++) for (const k of [0, C / 2, C / 4, 3 * C / 4]) {           // trailing/leading edges + two surface lines
-      const t = s / S, c0 = mixc(CY, VI, t, k === C / 2 ? 1.2 : .7), c1 = mixc(CY, VI, (s + 1) / S, k === C / 2 ? 1.2 : .7);
+    for (let s = 0; s < S; s++) for (const k of [0, C / 2, C / 4, 3 * C / 4]) {
+      const t = s / S, c0 = mixc(CY, VI, t, k === C / 2 ? 1.45 : .95), c1 = mixc(CY, VI, (s + 1) / S, k === C / 2 ? 1.45 : .95);
       wp.push(...P3(ring[s][k]), ...P3(ring[s + 1][k])); wc.push(...c0, ...c1); }
-    for (const s of [2, 5, 8, 11, S]) for (let k = 0; k < C; k++) {                          // chord ribs
-      const c = mixc(CY, VI, s / S, .5); wp.push(...P3(ring[s][k]), ...P3(ring[s][(k + 1) % C])); wc.push(...c, ...c); }
+    for (const s of [2, 5, 8, 11, S]) for (let k = 0; k < C; k++) {
+      const c = mixc(CY, VI, s / S, .7); wp.push(...P3(ring[s][k]), ...P3(ring[s][(k + 1) % C])); wc.push(...c, ...c); }
     return [g, wp, wc];
   }
   { const [g, wp, wc] = blade(), w = wire(wp, wc).geometry;
-    for (let b = 0; b < 3; b++) { const grp = new THREE.Group(); grp.rotation.x = b * 2.0944; grp.add(addShell(g), new THREE.LineSegments(w, wireMat)); grp.children[1].renderOrder = 8; rotor.add(grp); } }
-  // faint rotor-disk ring (tip path) to help the 3/4 view read
+    for (let b = 0; b < 3; b++) { const grp = new THREE.Group(); grp.rotation.x = b * 2.0944; grp.add(addShell(g, -100, 1.08), new THREE.LineSegments(w, wireMat)); grp.children[1].renderOrder = 8; rotor.add(grp); } }
   { const pts = []; for (let j = 0; j < 96; j++) { const a = j / 96 * 6.2832, b = (j + 1) / 96 * 6.2832; pts.push(XR, Math.cos(a), Math.sin(a), XR, Math.cos(b), Math.sin(b)); }
-    const c = []; for (let j = 0; j < 192; j++) c.push(.12, .09, .26); turb.add(wire(pts, c)); }
+    const c = []; for (let j = 0; j < 192; j++) c.push(.28, .22, .55); turb.add(wire(pts, c)); }
 
+  const nacelleHalo = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xb8d8ff, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, fog: true })
+  );
+  nacelleHalo.position.set(XR + 0.36, 0.02, 0);
+  nacelleHalo.renderOrder = 9;
+  turb.add(nacelleHalo);
 
-  /* ===== Layered neural surrogate on the right ('engineering meets AI').
-     A clearly structured MLP (input → hidden → output) sits in the turbine wake.
-     Flow is drawn into the input layer; pulses travel as a forward pass; a faint
-     tensor grid, data packets and a light attention web sit around it. The left
-     (text) side stays calm. ===== */
-  const net = new THREE.Group(); stage.add(net);
-  const ann = new THREE.Group(); net.add(ann);
-
-  const pal = [[.12, .72, 1.0], [.28, .48, 1.0], [.50, .32, 1.0], [.72, .24, .96], [.92, .22, .70], [1.0, .28, .52]];
-  const palAt = (t, o) => { t = clamp(t, 0, 1); const f = t * (pal.length - 1), i = Math.min(pal.length - 2, Math.floor(f)), u = f - i;
-    for (let c = 0; c < 3; c++) o[c] = pal[i][c] + (pal[i + 1][c] - pal[i][c]) * u; return o; };
-
-  const layers = isSmall ? [4, 6, 3] : [5, 7, 6, 3];
-  const layerGap = isSmall ? 1.12 : 1.39;               // ~1.65x wider layer spacing
-  const layerH = isSmall ? 2.05 : 2.55;
+  /* ===== Network: layers of nodes across the hero. The rotor is the sink they converge into. ===== */
+  const layers = isSmall ? [4, 5, 3] : [4, 6, 5, 4];
+  const nLayers = layers.length;
   const layerIndex = [];
-  const nodes = [], nCol = [], coreR = [], nPh = [];
-  for (let li = 0; li < layers.length; li++) {
+  const nodes = [], nCol = [], coreR = [], nPh = [], nLayer = [];
+  for (let li = 0; li < nLayers; li++) {
     layerIndex.push(nodes.length);
-    const n = layers[li], x = (li - (layers.length - 1) / 2) * layerGap;
-    const col = []; palAt(li / Math.max(1, layers.length - 1), col);
+    const n = layers[li];
+    palAt(li / Math.max(1, nLayers - 1), rgb);
     for (let j = 0; j < n; j++) {
-      const y = (j - (n - 1) / 2) * (layerH / Math.max(1, n - 1));
-      const z = ((li % 2) ? 0.07 : -0.07) + (j % 2 ? 0.03 : -0.03);
-      nodes.push(new THREE.Vector3(x, y, z));
-      nCol.push(col.slice());
-      coreR.push(li === 0 || li === layers.length - 1 ? 0.078 : 0.062);
+      nodes.push(new THREE.Vector3());
+      nCol.push(rgb.slice());
+      coreR.push(li === 0 ? 0.07 : li === nLayers - 1 ? 0.08 : 0.062);
       nPh.push(rnd() * 6.28);
+      nLayer.push(li);
     }
   }
   const NN = nodes.length;
-  const inputFrom = 0, inputTo = layers[0];
-  const rest = new THREE.Vector3();
+  const layerAct = new Float32Array(nLayers + 1);           // last slot = rotor arrival
 
-  // directed edges: fully connected between adjacent layers, plus a few skip/attention links
+  function placeNetwork(x0, x1, h0) {
+    for (let li = 0; li < nLayers; li++) {
+      const u = li / Math.max(1, nLayers - 1);
+      // slightly more space on the left, tighter as streams converge
+      const x = lerp(x0, x1, u * u * 0.18 + u * 0.82);
+      const h = lerp(h0, h0 * 0.58, u);
+      const n = layers[li], a0 = layerIndex[li];
+      palAt(u, rgb);
+      for (let j = 0; j < n; j++) {
+        const y = (j - (n - 1) / 2) * (h / Math.max(1, n - 1));
+        const z = ((li % 2) ? 0.16 : -0.14) + (j % 2 ? 0.07 : -0.06) + (j - (n - 1) / 2) * 0.03;
+        nodes[a0 + j].set(x, y, z);
+        nCol[a0 + j] = rgb.slice();
+      }
+    }
+  }
+
+  const tmpV = new THREE.Vector3(), tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3(), tmpD = new THREE.Vector3();
+  function rotPt(lx, y, z, out) {
+    out.set(lx, y, z);
+    turb.localToWorld(out);
+    stage.worldToLocal(out);
+    return out;
+  }
+
+  /* Persistent curved links (the visible "wiring" that is also the wind). */
   const pairs = [];
-  for (let li = 0; li < layers.length - 1; li++) {
-    const a0 = layerIndex[li], a1 = a0 + layers[li], b0 = layerIndex[li + 1], b1 = b0 + layers[li + 1];
-    for (let i = a0; i < a1; i++) for (let j = b0; j < b1; j++) pairs.push([i, j]);
+  function buildPairs() {
+    pairs.length = 0;
+    for (let li = 0; li < nLayers - 1; li++) {
+      const a0 = layerIndex[li], aN = layers[li], b0 = layerIndex[li + 1], bN = layers[li + 1];
+      for (let i = 0; i < aN; i++) {
+        // two or three destinations of similar height — airy, not a fully-connected hairball
+        const t = aN === 1 ? 0.5 : i / (aN - 1);
+        const j0 = Math.round(t * (bN - 1));
+        const set = new Set([j0, clamp(j0 - 1, 0, bN - 1), clamp(j0 + 1, 0, bN - 1)]);
+        if (bN > 3 && i % 2 === 0) set.add((j0 + 2) % bN);
+        for (const j of set) pairs.push([a0 + i, b0 + j, li]);
+      }
+    }
+    // a few long skip links
+    const skips = isSmall ? 3 : 5;
+    for (let k = 0; k < skips && nLayers >= 3; k++) {
+      const la = k % (nLayers - 2), lb = la + 2;
+      pairs.push([layerIndex[la] + (k % layers[la]), layerIndex[lb] + ((k * 2 + 1) % layers[lb]), la]);
+    }
   }
-  const layerEdges = pairs.length;
-  if (!isSmall) {
-    // a handful of skip connections (attention-style) from layer 0 → 2 and 1 → last
-    const addSkip = (la, lb, count) => {
-      const a0 = layerIndex[la], b0 = layerIndex[lb];
-      for (let k = 0; k < count; k++) pairs.push([a0 + (k * 3) % layers[la], b0 + (k * 5 + 1) % layers[lb]]);
+  buildPairs();
+
+  const LINK_M = 20;
+  const nLinkSeg = 512 * (LINK_M - 1);                      // capacity; count set in rebuildLinks
+  let nLinkUsed = 0;
+  const linkPos = new Float32Array(nLinkSeg * 2 * 3);
+  const linkCol = new Float32Array(nLinkSeg * 2 * 3);
+  const linkGeo = new THREE.BufferGeometry();
+  linkGeo.setAttribute('position', new THREE.BufferAttribute(linkPos, 3).setUsage(THREE.DynamicDrawUsage));
+  linkGeo.setAttribute('color', new THREE.BufferAttribute(linkCol, 3).setUsage(THREE.DynamicDrawUsage));
+  linkGeo.setDrawRange(0, 0);
+  const linkMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true });
+  const linkMesh = new THREE.LineSegments(linkGeo, linkMat);
+  linkMesh.frustumCulled = false; linkMesh.renderOrder = 2;
+  stage.add(linkMesh);
+
+  function cubic(a, b, c, d, t, o) {
+    const u = 1 - t, uu = u * u, tt = t * t, uuu = uu * u, ttt = tt * t;
+    o.set(
+      uuu * a.x + 3 * uu * t * b.x + 3 * u * tt * c.x + ttt * d.x,
+      uuu * a.y + 3 * uu * t * b.y + 3 * u * tt * c.y + ttt * d.y,
+      uuu * a.z + 3 * uu * t * b.z + 3 * u * tt * c.z + ttt * d.z
+    );
+    return o;
+  }
+  function crPoint(pts, t, o) {
+    const n = pts.length - 1;
+    const x = clamp(t, 0, 1) * n;
+    const i = Math.min(n - 1, Math.floor(x));
+    const f = x - i;
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const f2 = f * f, f3 = f2 * f;
+    o.set(
+      0.5 * ((2 * p1.x) + (-p0.x + p2.x) * f + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * f2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * f3),
+      0.5 * ((2 * p1.y) + (-p0.y + p2.y) * f + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * f2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * f3),
+      0.5 * ((2 * p1.z) + (-p0.z + p2.z) * f + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * f2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * f3)
+    );
+    return o;
+  }
+
+  /* Sample a flowing cubic between two nodes (bowed like a streamline, not a straight chord). */
+  function bowed(a, b, seed, samples, dest) {
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy, b.z - a.z) || 1;
+    const bow = (0.18 + (seed % 7) * 0.04) * len * ((seed % 2) ? 1 : -1);
+    const nz = ((seed % 5) - 2) * 0.07;
+    tmpA.copy(a);
+    tmpB.set(a.x + dx * 0.32, a.y + dy * 0.32 + bow, a.z + (b.z - a.z) * 0.32 + nz);
+    tmpC.set(a.x + dx * 0.68, a.y + dy * 0.68 + bow * 0.35, a.z + (b.z - a.z) * 0.68 - nz * 0.4);
+    tmpD.copy(b);
+    for (let i = 0; i < samples; i++) dest.push(cubic(tmpA, tmpB, tmpC, tmpD, i / (samples - 1), new THREE.Vector3()).clone());
+    return dest;
+  }
+
+  function rebuildLinks() {
+    let s = 0;
+    const pushSeg = (a, b, ka, kb) => {
+      if (s + 6 > linkPos.length) return;
+      palAt(storyU(a.x), rgb);
+      const fa = zoneK(a.x) * ka;
+      linkPos[s] = a.x; linkPos[s + 1] = a.y; linkPos[s + 2] = a.z;
+      linkCol[s] = rgb[0] * fa; linkCol[s + 1] = rgb[1] * fa; linkCol[s + 2] = rgb[2] * fa;
+      palAt(storyU(b.x), rgb);
+      const fb = zoneK(b.x) * kb;
+      linkPos[s + 3] = b.x; linkPos[s + 4] = b.y; linkPos[s + 5] = b.z;
+      linkCol[s + 3] = rgb[0] * fb; linkCol[s + 4] = rgb[1] * fb; linkCol[s + 5] = rgb[2] * fb;
+      s += 6;
     };
-    if (layers.length >= 3) addSkip(0, 2, 3);
-    if (layers.length >= 4) addSkip(1, 3, 3);
-  }
-  const pI = Int16Array.from(pairs, p => p[0]), pJ = Int16Array.from(pairs, p => p[1]);
-  const NE = pairs.length, eAlpha = new Float32Array(NE);
-  for (let k = 0; k < NE; k++) eAlpha[k] = k < layerEdges ? 0.55 : 0.28;
-  const eGeo = new LineSegmentsGeometry().setPositions(new Float32Array(NE * 6)).setColors(new Float32Array(NE * 6));
-  const ePosArr = eGeo.attributes.instanceStart.data.array, eColArr = eGeo.attributes.instanceColorStart.data.array;
-  const edgeMat = new LineMaterial({ vertexColors: true, linewidth: isSmall ? 1.2 : 1.55, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
-  const eLines = new LineSegments2(eGeo, edgeMat); eLines.frustumCulled = false;
-  eLines.renderOrder = 2; ann.add(eLines);
-
-  const cores = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }), NN);
-  cores.renderOrder = 6; ann.add(cores);
-  const m4 = new THREE.Matrix4(), cc = new THREE.Color();
-
-  const pointMat = new THREE.ShaderMaterial({
-    uniforms: { uScale: { value: 500 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    vertexShader: `attribute float aSize; attribute vec3 aColor; varying vec3 vC; uniform float uScale;
-      void main(){ vC=aColor; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=max(1.0,aSize*uScale/-mv.z); gl_Position=projectionMatrix*mv; }`,
-    fragmentShader: `varying vec3 vC; void main(){ float r=length(gl_PointCoord-.5)*2.; if(r>1.) discard; float a=pow(1.-r,2.4); gl_FragColor=vec4(vC*a,1.); }`
-  });
-  function makePoints(n, positions) {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
-    g.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(n), 1).setUsage(THREE.DynamicDrawUsage));
-    g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
-    const p = new THREE.Points(g, pointMat); p.frustumCulled = false; p.renderOrder = 5; return p;
-  }
-  const nPos = new Float32Array(NN * 3);
-  const nodePts = makePoints(NN, nPos); ann.add(nodePts);
-  const glow = new Float32Array(NN);
-  const nAlpha = new Float32Array(NN).fill(1);
-
-  const NP = isSmall ? 18 : 42;
-  const pulses = []; for (let i = 0; i < NP; i++) pulses.push({ e: -1, t: 0, v: .55 + rnd() * .55, wait: rnd() * 1.6, dir: true });
-  const pulsePts = makePoints(NP, new Float32Array(NP * 3)); ann.add(pulsePts);
-
-  function outgoing(from, onlyForward) {
-    const out = [];
-    for (let k = 0; k < NE; k++) {
-      if (eAlpha[k] < .15) continue;
-      if (pI[k] === from) out.push(k);
-      else if (!onlyForward && pJ[k] === from) out.push(k);
+    const samples = LINK_M;
+    const tmp = [];
+    for (let p = 0; p < pairs.length; p++) {
+      const [ia, ib, li] = pairs[p];
+      tmp.length = 0;
+      bowed(nodes[ia], nodes[ib], p * 13 + 3, samples, tmp);
+      const base = 0.22 + 0.06 * (li === 0 ? 0 : 1);
+      for (let i = 0; i < tmp.length - 1; i++) pushSeg(tmp[i], tmp[i + 1], base, base);
     }
-    return out.length ? out[(rnd() * out.length) | 0] : -1;
-  }
-
-  /* Faint tensor / matrix grid behind the network, with a slowly scrolling binary field. */
-  const gridW = isSmall ? 4.2 : 5.5, gridH = isSmall ? 2.4 : 3.0;
-  { const pts = [], cols = [];
-    const nx = isSmall ? 6 : 8, ny = isSmall ? 5 : 7;
-    const pushLine = (x0, y0, x1, y1, a) => {
-      pts.push(x0, y0, 0.55, x1, y1, 0.55);
-      const c = [0.25 * a, 0.55 * a, 1.0 * a]; cols.push(...c, ...c);
-    };
-    for (let i = 0; i <= nx; i++) { const x = -gridW / 2 + (i / nx) * gridW; pushLine(x, -gridH / 2, x, gridH / 2, i === 0 || i === nx ? 0.22 : 0.12); }
-    for (let j = 0; j <= ny; j++) { const y = -gridH / 2 + (j / ny) * gridH; pushLine(-gridW / 2, y, gridW / 2, y, j === 0 || j === ny ? 0.22 : 0.12); }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    const m = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 });
-    const lines = new THREE.LineSegments(g, m); lines.renderOrder = 1; ann.add(lines);
-  }
-  const mtxCanvas = document.createElement('canvas'); mtxCanvas.width = 256; mtxCanvas.height = 192;
-  const mtxCtx = mtxCanvas.getContext('2d');
-  const mtxTex = new THREE.CanvasTexture(mtxCanvas); mtxTex.minFilter = THREE.LinearFilter; mtxTex.magFilter = THREE.LinearFilter;
-  let mtxTick = 0, mtxAcc = 0;
-  function paintMatrix(t) {
-    const w = mtxCanvas.width, h = mtxCanvas.height;
-    mtxCtx.fillStyle = 'rgba(2,8,20,0.22)'; mtxCtx.fillRect(0, 0, w, h);
-    mtxCtx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
-    const cols = 16, rows = 10;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const u = (c * 13 + r * 7 + mtxTick) % 17;
-      const bit = ((c + r + mtxTick) % 3 === 0) ? (Math.sin(t * 0.7 + c * 0.4 + r) > 0 ? '1' : '0') : (u / 16).toFixed(2).slice(1);
-      const heat = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.6 + c * 0.5 + r * 0.3));
-      mtxCtx.fillStyle = `rgba(${Math.round(80 + 140 * heat)},${Math.round(160 + 40 * heat)},255,${0.28 + 0.35 * heat})`;
-      mtxCtx.fillText(bit, 8 + c * 15, 16 + r * 17);
-    }
-    mtxTex.needsUpdate = true;
-  }
-  paintMatrix(0);
-  { const g = new THREE.PlaneGeometry(gridW * 0.92, gridH * 0.92);
-    const m = new THREE.MeshBasicMaterial({ map: mtxTex, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-    const plane = new THREE.Mesh(g, m); plane.position.z = 0.54; plane.renderOrder = 1; ann.add(plane);
-  }
-
-  /* Data packets: small glyphs that fly from the incoming wake into the input layer. */
-  const NKIT = isSmall ? 8 : 16;
-  const kits = [];
-  for (let i = 0; i < NKIT; i++) kits.push({ t: 0, wait: rnd() * 2, a: new THREE.Vector3(), b: 0, live: false });
-  const kitMesh = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(0.055, 0.055, 0.055),
-    new THREE.MeshBasicMaterial({ color: 0x7ad7ff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }),
-    NKIT
-  );
-  kitMesh.renderOrder = 7; kitMesh.frustumCulled = false; ann.add(kitMesh);
-  const kitCol = new THREE.Color();
-  function spawnKit(k) {
-    const target = (rnd() * (inputTo - inputFrom)) | 0;
-    const start = kits[k].a;
-    start.set(-layerGap * (layers.length - 1) / 2 - 0.85 - rnd() * 0.5, (rnd() - 0.5) * layerH * 0.9, (rnd() - 0.5) * 0.4);
-    kits[k].b = target; kits[k].t = 0; kits[k].live = true; kits[k].wait = 0;
-  }
-
-  function updateNet(dt, t) {
-    // nodes breathe in place (no drift across the text)
-    for (let i = 0; i < NN; i++) {
-      const base = nodes[i];
-      const bx = base.x, by = base.y + Math.sin(t * 0.9 + nPh[i]) * 0.028, bz = base.z + Math.cos(t * 0.7 + nPh[i]) * 0.02;
-      rest.set(bx, by, bz);
-      rest.toArray(nPos, i * 3);
-      glow[i] *= Math.pow(0.18, dt);
-      nAlpha[i] = 0.85 + 0.15 * Math.sin(t * 1.1 + i * 0.6);
-      const r = coreR[i] * (0.85 + 0.25 * nAlpha[i]) * (1 + 0.55 * glow[i]);
-      m4.makeScale(r, r, r).setPosition(bx, by, bz); cores.setMatrixAt(i, m4);
-      const k = 0.22 + 0.78 * nAlpha[i] + 0.35 * glow[i], c = nCol[i];
-      cores.setColorAt(i, cc.setRGB((c[0] * .85 + .15) * k, (c[1] * .85 + .15) * k, (c[2] * .85 + .15) * k));
-    }
-    cores.instanceMatrix.needsUpdate = true; if (cores.instanceColor) cores.instanceColor.needsUpdate = true;
-
-    // edges, using the breathing node positions
-    for (let k = 0; k < NE; k++) {
-      const i = pI[k], j = pJ[k];
-      const ax = nPos[i * 3], ay = nPos[i * 3 + 1], az = nPos[i * 3 + 2];
-      const bx = nPos[j * 3], by = nPos[j * 3 + 1], bz = nPos[j * 3 + 2];
-      const o = k * 6;
-      ePosArr[o] = ax; ePosArr[o + 1] = ay; ePosArr[o + 2] = az; ePosArr[o + 3] = bx; ePosArr[o + 4] = by; ePosArr[o + 5] = bz;
-      const atten = k >= layerEdges ? 0.38 : 0.7;
-      const ea = eAlpha[k] * atten * (0.75 + 0.25 * Math.sin(t * 1.4 + k * 0.2));
-      eColArr[o] = nCol[i][0] * ea; eColArr[o + 1] = nCol[i][1] * ea; eColArr[o + 2] = nCol[i][2] * ea;
-      eColArr[o + 3] = nCol[j][0] * ea; eColArr[o + 4] = nCol[j][1] * ea; eColArr[o + 5] = nCol[j][2] * ea;
-    }
-    eGeo.attributes.instanceStart.data.needsUpdate = true; eGeo.attributes.instanceColorStart.data.needsUpdate = true;
-
-    const sA = nodePts.geometry.attributes.aSize, cA = nodePts.geometry.attributes.aColor;
-    for (let i = 0; i < NN; i++) {
-      const g = glow[i], c = nCol[i], b = (0.7 + 0.3 * nAlpha[i]);
-      sA.array[i] = coreR[i] * 5.4 + 0.3 * g;
-      for (let q = 0; q < 3; q++) cA.array[i * 3 + q] = c[q] * (.28 + .5 * g) * b;
-    }
-    nodePts.geometry.attributes.position.needsUpdate = true; sA.needsUpdate = true; cA.needsUpdate = true;
-
-    // forward-pass pulses: ride directed edges input → output, then wrap
-    const pp = pulsePts.geometry.attributes.position, ps = pulsePts.geometry.attributes.aSize, pc = pulsePts.geometry.attributes.aColor;
-    pulses.forEach((p, n) => {
-      if (p.e < 0) {
-        p.wait -= dt;
-        if (p.wait <= 0) {
-          // start on an outgoing edge from a random input node
-          const src = inputFrom + ((rnd() * (inputTo - inputFrom)) | 0);
-          p.e = outgoing(src, true); p.t = 0; p.wait = 0.2 + rnd() * 0.5;
-        }
-      } else {
-        p.t += dt * p.v;
-        if (p.t >= 1) {
-          const end = pJ[p.e];
-          glow[end] = Math.min(1.7, glow[end] + (reduceMotion ? 0.28 : 0.85));
-          const ne = outgoing(end, true);
-          p.e = ne; p.t = 0;
-          if (ne < 0) p.wait = 0.15 + rnd() * 0.4;
+    // drive curves: last layer → wrap / enter the rotor
+    const last0 = layerIndex[nLayers - 1], lastN = layers[nLayers - 1];
+    for (let j = 0; j < lastN; j++) {
+      for (let arm = 0; arm < 2; arm++) {
+        const wps = driveWaypoints(nodes[last0 + j], j, arm);
+        const samp = [];
+        for (let i = 0; i <= 24; i++) samp.push(crPoint(wps, i / 24, new THREE.Vector3()).clone());
+        for (let i = 0; i < samp.length - 1; i++) {
+          const fadeOut = 1 - smooth(0.72, 1, i / (samp.length - 1));
+          pushSeg(samp[i], samp[i + 1], 0.38 * fadeOut, 0.38 * fadeOut);
         }
       }
-      if (p.e < 0) { ps.array[n] = 0; return; }
-      const a = pI[p.e], b = pJ[p.e], tt = clamp(p.t, 0, 1);
-      const f = Math.sin(tt * Math.PI) * 0.95;
-      pp.array[n * 3] = nPos[a * 3] + (nPos[b * 3] - nPos[a * 3]) * tt;
-      pp.array[n * 3 + 1] = nPos[a * 3 + 1] + (nPos[b * 3 + 1] - nPos[a * 3 + 1]) * tt;
-      pp.array[n * 3 + 2] = nPos[a * 3 + 2] + (nPos[b * 3 + 2] - nPos[a * 3 + 2]) * tt;
-      ps.array[n] = 0.26;
-      for (let c = 0; c < 3; c++) pc.array[n * 3 + c] = ((nCol[a][c] + nCol[b][c]) * 0.5 * .75 + .3) * f * 1.25;
-    });
-    pp.needsUpdate = true; ps.needsUpdate = true; pc.needsUpdate = true;
-
-    // data packets flying into the input layer
-    for (let i = 0; i < NKIT; i++) {
-      const k = kits[i];
-      if (!k.live) { k.wait -= dt; if (k.wait <= 0) spawnKit(i); }
-      if (!k.live) { m4.makeScale(0, 0, 0).setPosition(0, 0, 0); kitMesh.setMatrixAt(i, m4); continue; }
-      k.t += dt * 0.85;
-      const tt = clamp(k.t, 0, 1), s = tt * tt * (3 - 2 * tt);
-      const tx = nPos[k.b * 3], ty = nPos[k.b * 3 + 1], tz = nPos[k.b * 3 + 2];
-      const x = k.a.x + (tx - k.a.x) * s, y = k.a.y + (ty - k.a.y) * s, z = k.a.z + (tz - k.a.z) * s;
-      const sc = 0.8 + 0.5 * Math.sin(tt * Math.PI);
-      m4.makeScale(sc, sc, sc).setPosition(x, y, z); kitMesh.setMatrixAt(i, m4);
-      const hue = 0.55 + 0.45 * tt;
-      kitMesh.setColorAt(i, kitCol.setRGB(0.3 + 0.5 * hue, 0.75, 1.0));
-      if (k.t >= 1) { glow[k.b] = Math.min(1.7, glow[k.b] + 1.0); k.live = false; k.wait = 0.3 + rnd() * 1.1; }
     }
-    kitMesh.instanceMatrix.needsUpdate = true; if (kitMesh.instanceColor) kitMesh.instanceColor.needsUpdate = true;
-
-    mtxAcc += dt;
-    if (mtxAcc > 0.18) { mtxAcc = 0; mtxTick++; paintMatrix(t); }
+    nLinkUsed = s / 3;
+    linkGeo.setDrawRange(0, nLinkUsed);
+    linkGeo.attributes.position.needsUpdate = true;
+    linkGeo.attributes.color.needsUpdate = true;
   }
 
-  // faint depth dust
-  const ND = isSmall ? 60 : 140, dPos = new Float32Array(ND * 3);
-  for (let i = 0; i < ND; i++) { dPos[i * 3] = (rnd() - .5) * 34; dPos[i * 3 + 1] = (rnd() - .5) * 18; dPos[i * 3 + 2] = -14 + rnd() * 18; }
-  const dust = makePoints(ND, dPos);
-  for (let i = 0; i < ND; i++) { const b = .12 + rnd() * .25; dust.geometry.attributes.aSize.array[i] = .05 + rnd() * .05; dust.geometry.attributes.aColor.array.set([b * .6, b * .9, b], i * 3); }
-  stage.add(dust);
+  function driveWaypoints(src, j, arm) {
+    const ang = (j / Math.max(1, layers[nLayers - 1]) + arm * 0.17) * Math.PI * 2;
+    const rIn = arm === 0 ? 0.42 + (j % 3) * 0.12 : 0.92 + (j % 2) * 0.1;
+    const swirl = arm === 0 ? 0.55 : 0.9;
+    const a0 = ang, a1 = ang + swirl * 0.55, a2 = ang + swirl * 1.05;
+    const p0 = src.clone();
+    const mid = new THREE.Vector3(); rotPt(XR - 0.85, Math.cos(a0) * rIn * 0.85, Math.sin(a0) * rIn * 0.85, mid);
+    mid.y = lerp(src.y, mid.y, 0.7); mid.z = lerp(src.z, mid.z, 0.7);
+    const pA = new THREE.Vector3(); rotPt(XR - 0.15, Math.cos(a1) * rIn, Math.sin(a1) * rIn, pA);
+    const pB = new THREE.Vector3(); rotPt(XR + 0.35, Math.cos(a2) * (rIn * (arm === 0 ? 0.7 : 1.08)), Math.sin(a2) * (rIn * (arm === 0 ? 0.7 : 1.08)), pB);
+    const pC = new THREE.Vector3(); rotPt(XR + 0.95, Math.cos(a2 + 0.25) * rIn * 0.85, Math.sin(a2 + 0.25) * rIn * 0.85, pC);
+    return [p0, mid, pA, pB, pC];
+  }
 
-  await nextFrame();                                           // spread setup over frames
-  /* ===== Post-processing ===== */
+  function storyU(x) {
+    const tMin = nodes[0] ? nodes[0].x - 1.2 : -4;
+    const tMax = turb.position.x + 0.4;
+    return clamp((x - tMin) / Math.max(0.01, tMax - tMin), 0, 1);
+  }
+
+  /* Soft node cores + additive glow sprites. */
+  const cores = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthWrite: false, fog: true }), NN);
+  cores.renderOrder = 6; cores.frustumCulled = false; stage.add(cores);
+  const dummy = new THREE.Object3D();
+  const coreCol = new THREE.Color();
+  function makePoints(n) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(n), 1).setUsage(THREE.DynamicDrawUsage));
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+      uniforms: { uScale: { value: 400 } },
+      vertexShader: `attribute float aSize; attribute vec3 color; varying vec3 vC; uniform float uScale;
+        void main(){ vC=color; vec4 mv=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mv;
+          gl_PointSize=aSize*uScale/max(1.,-mv.z); }`,
+      fragmentShader: `varying vec3 vC; void main(){ vec2 p=gl_PointCoord*2.-1.; float r=dot(p,p);
+        if(r>1.) discard; float a=exp(-r*2.6); gl_FragColor=vec4(vC*a,1.); }`
+    });
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; pts.renderOrder = 5; return pts;
+  }
+  const nodePts = makePoints(NN); stage.add(nodePts);
+
+  /* A handful of faint background nodes (parallax depth). */
+  const nBg = isSmall ? 6 : 10;
+  const bgPts = makePoints(nBg); stage.add(bgPts);
+  const bgPos = [];
+  function placeBackground() {
+    bgPos.length = 0;
+    const x0 = nodes[0].x - 0.4, x1 = turb.position.x - 0.6;
+    for (let i = 0; i < nBg; i++) {
+      const u = (i + 0.5) / nBg;
+      bgPos.push(new THREE.Vector3(lerp(x0, x1, u), (rnd() - 0.5) * 3.1, -2.1 - rnd() * 1.4));
+    }
+    const pos = bgPts.geometry.attributes.position.array;
+    const c = bgPts.geometry.attributes.color.array;
+    const sz = bgPts.geometry.attributes.aSize.array;
+    for (let i = 0; i < nBg; i++) {
+      pos[i * 3] = bgPos[i].x; pos[i * 3 + 1] = bgPos[i].y; pos[i * 3 + 2] = bgPos[i].z;
+      palAt(storyU(bgPos[i].x), rgb);
+      const k = 0.12 * zoneK(bgPos[i].x);
+      c[i * 3] = rgb[0] * k; c[i * 3 + 1] = rgb[1] * k; c[i * 3 + 2] = rgb[2] * k;
+      sz[i] = 0.09;
+    }
+    bgPts.geometry.attributes.position.needsUpdate = true;
+    bgPts.geometry.attributes.color.needsUpdate = true;
+    bgPts.geometry.attributes.aSize.needsUpdate = true;
+  }
+
+  /* Tracer paths: each is a Catmull-Rom through the inlet, a node in every layer, then a rotor wrap. */
+  const PATHS = [];                                          // { pts:Vector3[], m, dim, glyph }
+  function buildPaths() {
+    PATHS.length = 0;
+    const nMain = isSmall ? 18 : 28;
+    const nDeep = isSmall ? 5 : 8;
+    const make = (wps, dim, glyph) => {
+      const m = isSmall ? 28 : 36;
+      const pts = [];
+      for (let i = 0; i <= m; i++) pts.push(crPoint(wps, i / m, new THREE.Vector3()).clone());
+      PATHS.push({ pts, m: pts.length, dim, glyph });
+    };
+    const inletX = nodes[0].x - 1.35;
+    for (let s = 0; s < nMain; s++) {
+      const wps = [];
+      const yJ = (s / Math.max(1, nMain - 1) - 0.5) * (isSmall ? 2.0 : 2.6) + (s % 3 - 1) * 0.12;
+      const zJ = ((s % 4) - 1.5) * 0.18;
+      wps.push(new THREE.Vector3(inletX, yJ, zJ));
+      let y = yJ, z = zJ;
+      for (let li = 0; li < nLayers; li++) {
+        const a0 = layerIndex[li], n = layers[li];
+        // node of similar height, with a small neighbour wander
+        let best = 0, bestD = 1e9;
+        for (let j = 0; j < n; j++) { const d = Math.abs(nodes[a0 + j].y - y); if (d < bestD) { bestD = d; best = j; } }
+        if (s % 3 === li % 3) best = clamp(best + (s % 2 ? 1 : -1), 0, n - 1);
+        const nd = nodes[a0 + best];
+        const off = 0.05 * ((s + li) % 5 - 2);
+        wps.push(new THREE.Vector3(nd.x - 0.02, nd.y + off * 0.15, nd.z + off * 0.08));
+        y = nd.y; z = nd.z;
+      }
+      const arm = s % 2;
+      const dwp = driveWaypoints(wps[wps.length - 1], s % layers[nLayers - 1], arm);
+      for (let k = 1; k < dwp.length; k++) wps.push(dwp[k]);
+      make(wps, s % 5 === 0 ? 0.55 : 1, s % 3 !== 2);
+    }
+    // deeper, dimmer parallax streams
+    for (let s = 0; s < nDeep; s++) {
+      const wps = [];
+      const y = (s / Math.max(1, nDeep - 1) - 0.5) * 3.0;
+      const z = -2.0 - (s % 3) * 0.35;
+      wps.push(new THREE.Vector3(inletX - 0.4, y, z));
+      wps.push(new THREE.Vector3(lerp(inletX, turb.position.x, 0.35), y * 0.85, z + 0.2));
+      wps.push(new THREE.Vector3(lerp(inletX, turb.position.x, 0.7), y * 0.55, z));
+      wps.push(new THREE.Vector3(turb.position.x + 0.2, y * 0.35, z + 0.15));
+      make(wps, 0.28, false);
+    }
+  }
+
+  function pathPos(path, s, o) {
+    const pts = path.pts, m = path.m - 1;
+    const u = clamp(s, 0, m);
+    const i = Math.min(m - 1, Math.floor(u));
+    const f = u - i;
+    o.lerpVectors(pts[i], pts[i + 1], f);
+    return o;
+  }
+
+  function spawn(i, anywhere) {
+    const p = PATHS[i % Math.max(1, PATHS.length)];
+    P.path[i] = i % Math.max(1, PATHS.length);
+    P.life[i] = 3.8 + rnd() * 2.4;
+    P.inten[i] = (0.7 + rnd() * 0.45) * (p.dim || 1);
+    P.sp[i] = (p.m - 1) / P.life[i];
+    P.bit[i] = rnd() < 0.5 ? 0 : 1;
+    P.age[i] = 0;
+    P.s[i] = anywhere ? rnd() * (p.m - 1) * 0.92 : 0;
+  }
+
+  function digitize(x, i) {
+    if (streamMode === 'glyphs') return 1;
+    if (streamMode === 'lines') return 0;
+    const p = PATHS[P.path[i]];
+    if (p && !p.glyph) return 0;
+    const early = (i % 5 === 0) ? 0.35 : 0;                  // a few sparse bits even upstream
+    return clamp(smooth(nodes[0] ? nodes[0].x + 0.8 : -1, turb.position.x - 1.8, x) * 1.0 + early, 0, 1);
+  }
+
+  const trailTmp = new THREE.Vector3();
+  function stepParticles(dt) {
+    const boost = 1 + 0.85 * gust + 0.55 * layerAct[nLayers];
+    let energy = 0, nE = 0;
+    for (let i = 0; i < nAct; i++) {
+      const path = PATHS[P.path[i]];
+      if (!path) continue;
+      const liNear = clamp(Math.floor(storyU(pathPos(path, P.s[i], trailTmp).x) * nLayers), 0, nLayers - 1);
+      const spd = P.sp[i] * boost * (1 + 0.65 * layerAct[liNear]);
+      P.s[i] += spd * dt;
+      P.age[i] += dt;
+      if (P.s[i] >= path.m - 1 || P.age[i] > P.life[i] + 0.4) { spawn(i, false); }
+      // write trail backwards along the path
+      const ds = 0.7;
+      for (let k = 0; k < K; k++) {
+        pathPos(path, P.s[i] - k * ds, trailTmp);
+        const o = (i * K + k) * 3;
+        hist[o] = trailTmp.x; hist[o + 1] = trailTmp.y; hist[o + 2] = trailTmp.z;
+        if (k === 0) { energy += zoneK(trailTmp.x); nE++; }
+        bits[i * K + k] = ((P.bit[i] + k) & 1);
+      }
+    }
+    flowE = nE ? energy / nE : 0.5;
+    rotorSpeed += (OMEGA * (0.72 + 0.28 * clamp(flowE, 0, 1)) * (1 + 0.95 * layerAct[nLayers] + 0.28 * gust) - rotorSpeed) * Math.min(1, dt * 4.5);
+    rotorAng += rotorSpeed * dt;
+    simT += dt;
+  }
+
+  function writeColors() {
+    const GAIN = 1.05;
+    for (let i = 0; i < nAct; i++) {
+      const inten = P.inten[i] * GAIN * (1 + 0.4 * gust);
+      const b = i * K * 3;
+      for (let k = 0; k < K; k++) {
+        const o = b + k * 3;
+        const x = hist[o];
+        palAt(storyU(x), rgb);
+        const f = fade[k] * inten * zoneK(x);
+        const dig = digitize(x, i);
+        const gA = streamMode === 'glyphs' ? 1 : streamMode === 'lines' ? 0 : dig;
+        col[o] = rgb[0] * f * gA; col[o + 1] = rgb[1] * f * gA; col[o + 2] = rgb[2] * f * gA;
+      }
+      for (let k = 0; k < K - 1; k++) {
+        const o = b + k * 3;
+        const s = (i * (K - 1) + k) * 6;
+        linePos[s] = hist[o]; linePos[s + 1] = hist[o + 1]; linePos[s + 2] = hist[o + 2];
+        linePos[s + 3] = hist[o + 3]; linePos[s + 4] = hist[o + 4]; linePos[s + 5] = hist[o + 5];
+        let l0, l1;
+        if (streamMode === 'glyphs') { l0 = l1 = 0; }
+        else if (streamMode === 'lines') { l0 = l1 = 1; }
+        else { l0 = 1 - digitize(hist[o], i) * 0.88; l1 = 1 - digitize(hist[o + 3], i) * 0.88; }
+        palAt(storyU(hist[o]), rgb);
+        const f0 = fade[k] * inten * l0 * zoneK(hist[o]);
+        lineCol[s] = rgb[0] * f0; lineCol[s + 1] = rgb[1] * f0; lineCol[s + 2] = rgb[2] * f0;
+        palAt(storyU(hist[o + 3]), rgb);
+        const f1 = fade[k + 1] * inten * l1 * zoneK(hist[o + 3]);
+        lineCol[s + 3] = rgb[0] * f1; lineCol[s + 4] = rgb[1] * f1; lineCol[s + 5] = rgb[2] * f1;
+      }
+    }
+    for (let i = nAct; i < N; i++) {
+      for (let k = 0; k < K; k++) {
+        const o = i * K * 3 + k * 3;
+        col[o] = col[o + 1] = col[o + 2] = 0;
+      }
+      for (let k = 0; k < K - 1; k++) {
+        const s = (i * (K - 1) + k) * 6;
+        for (let c = 0; c < 6; c++) lineCol[s + c] = 0;
+      }
+    }
+    hBuf.needsUpdate = true; cBuf.needsUpdate = true; bBuf.needsUpdate = true;
+    lineGeo.attributes.position.needsUpdate = true; lineGeo.attributes.color.needsUpdate = true;
+  }
+
+  /* Pulse motes that ride the curved links (in addition to the longer tracer trails). */
+  const NP = isSmall ? 22 : 36;
+  const pulsePts = makePoints(NP); stage.add(pulsePts);
+  const pulses = [];
+  for (let i = 0; i < NP; i++) pulses.push({ path: i % 2, s: rnd(), v: 8 + rnd() * 6, live: true });
+
+  function updatePulses(dt) {
+    const pos = pulsePts.geometry.attributes.position.array;
+    const c = pulsePts.geometry.attributes.color.array;
+    const sz = pulsePts.geometry.attributes.aSize.array;
+    const nP = PATHS.length;
+    if (!nP) return;
+    for (let i = 0; i < NP; i++) {
+      const p = pulses[i];
+      if (p.path >= nP) p.path = i % nP;
+      const path = PATHS[p.path];
+      const boost = 1 + 1.1 * gust + 0.8 * layerAct[clamp(Math.floor((p.s / (path.m - 1)) * nLayers), 0, nLayers)];
+      p.s += p.v * dt * boost * 0.55;
+      if (p.s >= path.m - 1) { p.path = (p.path + 3) % nP; p.s = 0; p.v = 8 + rnd() * 6; }
+      pathPos(path, p.s, trailTmp);
+      pos[i * 3] = trailTmp.x; pos[i * 3 + 1] = trailTmp.y; pos[i * 3 + 2] = trailTmp.z;
+      palAt(storyU(trailTmp.x), rgb);
+      const k = (0.55 + 0.7 * gust) * zoneK(trailTmp.x);
+      c[i * 3] = rgb[0] * k; c[i * 3 + 1] = rgb[1] * k; c[i * 3 + 2] = rgb[2] * k;
+      sz[i] = (isSmall ? 0.09 : 0.11) * (0.85 + 0.5 * gust);
+    }
+    pulsePts.geometry.attributes.position.needsUpdate = true;
+    pulsePts.geometry.attributes.color.needsUpdate = true;
+    pulsePts.geometry.attributes.aSize.needsUpdate = true;
+  }
+
+  function updateNodes(t) {
+    const pos = nodePts.geometry.attributes.position.array;
+    const c = nodePts.geometry.attributes.color.array;
+    const sz = nodePts.geometry.attributes.aSize.array;
+    for (let i = 0; i < NN; i++) {
+      const nd = nodes[i], li = nLayer[i];
+      const breath = 0.5 + 0.5 * Math.sin(t * 1.1 + nPh[i]);
+      const act = layerAct[li];
+      const k = zoneK(nd.x);
+      const glow = (0.38 + 0.28 * breath + 0.7 * act) * k;
+      palAt(li / Math.max(1, nLayers - 1), rgb);
+      pos[i * 3] = nd.x; pos[i * 3 + 1] = nd.y; pos[i * 3 + 2] = nd.z;
+      c[i * 3] = nCol[i][0] * glow * 1.2; c[i * 3 + 1] = nCol[i][1] * glow * 1.2; c[i * 3 + 2] = nCol[i][2] * glow * 1.2;
+      sz[i] = (coreR[i] * 2.8) * (0.9 + 0.35 * act) * (0.75 + 0.25 * k);
+      dummy.position.copy(nd);
+      const sc = coreR[i] * (0.85 + 0.4 * act + 0.08 * breath);
+      dummy.scale.setScalar(sc);
+      dummy.updateMatrix();
+      cores.setMatrixAt(i, dummy.matrix);
+      coreCol.setRGB(nCol[i][0] * (0.35 + 0.65 * k), nCol[i][1] * (0.35 + 0.65 * k), nCol[i][2] * (0.35 + 0.65 * k));
+      cores.setColorAt(i, coreCol);
+    }
+    cores.instanceMatrix.needsUpdate = true;
+    if (cores.instanceColor) cores.instanceColor.needsUpdate = true;
+    nodePts.geometry.attributes.position.needsUpdate = true;
+    nodePts.geometry.attributes.color.needsUpdate = true;
+    nodePts.geometry.attributes.aSize.needsUpdate = true;
+  }
+
+  /* Gusts: a wave of activation travels layer by layer, then speeds the rotor. */
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0, armed: false };
+  function updateGust(dt, t) {
+    const period = 9.2, dur = 2.35, delay = 6.5;
+    const phase = t < delay ? period : (t - delay) % period;
+    const periodic = (!reduceMotion && t >= delay && phase < dur) ? 1 : 0;
+    const prog = periodic ? phase / dur : 0;
+    let poke = 0;
+    if (!isSmall && !reduceMotion) {
+      poke = mouse.armed ? clamp(1 - Math.hypot(mouse.tx - 0.35, mouse.ty * 0.85) / 0.85, 0, 1) * 0.5 : 0;
+    }
+    const forced = (holdGust || (stats && stats.forceGust)) ? 1 : 0;
+    const target = Math.max(periodic, poke > 0.2 ? poke : 0, forced);
+    gust += (target - gust) * (target > gust ? 0.2 : 0.05);
+    let waveT = forced ? 0.62 : (periodic ? prog : poke > 0.2 ? 0.45 : 0);
+    if (forced) gust = Math.max(gust, 0.92);
+    wave += (waveT - wave) * (forced ? 1 : 0.18);
+    // layer activations: a bump travelling 0 → 1 (rotor)
+    for (let li = 0; li <= nLayers; li++) {
+      const pos = li / nLayers;
+      const bump = Math.exp(-Math.pow((wave - pos) * 3.6, 2));
+      layerAct[li] = gust * (0.15 + 0.85 * bump);
+    }
+    nacellePulse = layerAct[nLayers];
+    if (nacelleHalo && nacelleHalo.material) {
+      const k = Math.min(1, 0.12 + nacellePulse * 0.55 + gust * 0.12);
+      nacelleHalo.material.opacity = 0.08 + 0.28 * k;
+      nacelleHalo.scale.setScalar(1 + 0.45 * k);
+    }
+    // brighten persistent drive-link colours slightly with the wave (cheap: scale isn't needed every frame)
+    stats.gust = gust; stats.wave = wave; stats.rotorSpeed = rotorSpeed; stats.flowE = flowE;
+  }
+
   let composer = null, bloom = null, useBloom = true;
   try {
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), isSmall ? 0.6 : 0.65, 0.45, 0.25);
+    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), isSmall ? 0.48 : 0.52, 0.42, 0.28);
     const bloomSetSize = bloom.setSize.bind(bloom);
-    bloom.setSize = (w, h) => bloomSetSize(Math.max(1, w / 2), Math.max(1, h / 2));   // bloom chain at half the usual resolution
+    bloom.setSize = (w, h) => bloomSetSize(Math.max(1, w / 2), Math.max(1, h / 2));
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
   } catch (e) { composer = null; useBloom = false; }
 
-  /* ===== Layout / resize ===== */
-  let W = 1, H = 1, camZ = 10.5, narrow = false, zoneK = 1.3; const netAt = new THREE.Vector3();
+  let W = 1, H = 1, camZ = 12, lookX = 1.12;
   function layout() {
-    W = canvas.clientWidth || window.innerWidth; H = canvas.clientHeight || window.innerHeight;
-    narrow = W / H < 0.95 || W < 760;
-    renderer.setPixelRatio(pixelRatio); renderer.setSize(W, H, false);
+    W = canvas.clientWidth || canvas.parentElement.clientWidth || 1280;
+    H = canvas.clientHeight || canvas.parentElement.clientHeight || 800;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / Math.max(1, H); camera.updateProjectionMatrix();
     if (composer) { composer.setPixelRatio(pixelRatio); composer.setSize(W, H); }
-    camera.aspect = W / H; camera.updateProjectionMatrix();
-    if (narrow) {
-      camZ = 15.5; stage.position.set(0, 3.7, 0); stage.scale.setScalar(1);
-      rig.position.set(-0.45, 0.2, 0); rig.scale.setScalar(1.45); zoneK = 0.95;
-      X0 = -4.6; X1 = 4.6; YH = 3.0; ZH = 2.2; XC = 1.4; netAt.set(1.15, -1.0, -1.2);
+    if (isSmall) {
+      camZ = 17.2; lookX = 0.35;
+      stage.position.set(0.05, 4.95, 0); stage.scale.setScalar(1);
+      placeNetwork(-2.25, 1.25, 1.85);
+      turb.position.set(2.18, 0.04, 0); turb.scale.setScalar(1.02);
     } else {
-      camZ = 10.5; const a = W / H;                              // keep the right-hand composition on wide/narrow desktops
-      stage.position.set(clamp((a - 1.6) * 2.2, -0.8, 2.2), 0, 0); stage.scale.setScalar(clamp(a / 1.6, 0.78, 1.15));
-      rig.position.set(2.75, 0.75, 0); rig.scale.setScalar(1.45); zoneK = 1.3;
-      X0 = -6; X1 = 6; YH = 3.0; ZH = 2.4; XC = 1.6; netAt.set(4.7, -0.5, -1.55);
+      const a = W / Math.max(1, H);
+      camZ = 12.0; lookX = 1.12;
+      stage.position.set(0, 0.1, 0);
+      stage.scale.setScalar(clamp(a / 1.6, 0.84, 1.08));
+      placeNetwork(-3.15, 3.2, 2.55);
+      turb.position.set(4.82, 0.12, 0); turb.scale.setScalar(1.16);
     }
-    // pin the layered network in the wake, to the right of the turbine (and of the text)
-    ann.position.copy(netAt);
-    ann.scale.setScalar(narrow ? 0.88 : 1);
-    rig.rotation.y = YAW; rig.updateMatrix();
-    T.copy(netAt).applyMatrix4(rig.matrix.clone().invert());       // network centre in the turbine frame
-    ribMat.uniforms.uRes.value.set(W * pixelRatio / 2, H * pixelRatio / 2); ribMat.uniforms.uPx.value = (isSmall ? 7.0 : 8.0) * pixelRatio / 2;
-    edgeMat.resolution.set(W * pixelRatio, H * pixelRatio);
-    pointMat.uniforms.uScale.value = (H * pixelRatio) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    turb.rotation.y = YAW;
+    turb.updateMatrixWorld(true);
+    stage.updateMatrixWorld(true);
+    rebuildLinks();
+    buildPaths();
+    placeBackground();
+    ribMat.uniforms.uRes.value.set(W * pixelRatio / 2, H * pixelRatio / 2);
+    ribMat.uniforms.uPx.value = (isSmall ? 7.0 : 8.2) * pixelRatio / 2;
+    const uScale = (H * pixelRatio) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    nodePts.material.uniforms.uScale.value = uScale;
+    pulsePts.material.uniforms.uScale.value = uScale;
+    bgPts.material.uniforms.uScale.value = uScale;
   }
   layout();
   window.addEventListener('resize', () => { layout(); if (!running) drawStatic(); });
 
-  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   if (!isSmall && !reduceMotion) {
     window.addEventListener('pointermove', e => {
-      mouse.tx = (e.clientX / window.innerWidth - .5) * 2; mouse.ty = (e.clientY / window.innerHeight - .5) * 2;
+      mouse.armed = true; mouse.tx = (e.clientX / window.innerWidth - .5) * 2; mouse.ty = (e.clientY / window.innerHeight - .5) * 2;
     }, { passive: true });
   }
 
-  const motionK = reduceMotion ? 0.28 : 1;                   // Windows "Animation effects off" still gets a slow drift
+  const motionK = reduceMotion ? 0.28 : 1;
   function render() { (useBloom && composer) ? composer.render() : renderer.render(scene, camera); }
   function drawStatic() {
-    camera.position.set(0.6, 0.2, camZ); camera.lookAt(0, 0, 0);
-    rotor.rotation.x = rotorAng; updateNet(0.016, 2); writeColors(); render();
+    camera.position.set(lookX, 0.15, camZ); camera.lookAt(lookX, -0.05, 0);
+    rotor.rotation.x = rotorAng; updateNodes(2); updatePulses(0.016); writeColors(); render();
   }
 
-  /* ===== Adaptive quality & stats ===== */
-  const stats = { rawSum: 0, rawN: 0, avgRawFrameMs: 0, frames: 0, sum: 0, jsSum: 0, win: 0, winSum: 0, level: 0, avgFrameMs: 0, avgJsMs: 0 };
+  const stats = { rawSum: 0, rawN: 0, avgRawFrameMs: 0, frames: 0, sum: 0, jsSum: 0, win: 0, winSum: 0, level: 0, avgFrameMs: 0, avgJsMs: 0, streamMode, n: N, k: K, forceGust: 0, gust: 0 };
   window.__hero = stats;
   function degrade() {
     stats.level++;
     if (stats.level === 1) {
-      pixelRatio = Math.min(pixelRatio, 1); nAct = Math.floor(N * 0.65); ribGeo.instanceCount = nAct * K - 1; layout();
+      pixelRatio = Math.min(pixelRatio, 1); nAct = Math.floor(N * 0.65); ribGeo.instanceCount = Math.max(1, nAct * K - 1); layout();
       if (bloom) bloom.resolution.set(W / 2, H / 2);
     } else if (stats.level === 2) {
       useBloom = false; nAct = Math.floor(N * 0.4); ribGeo.instanceCount = Math.max(1, nAct * K - 1);
       for (let i = nAct * K * 3; i < col.length; i++) col[i] = 0;
     }
+    stats.nAct = nAct;
   }
 
   const clock = { last: performance.now(), t: 0 };
@@ -637,18 +783,27 @@ export async function initHero({ reduceMotion, isSmall }) {
     const dt = dtReal * motionK;
     clock.t += dt; const t = clock.t;
     if (reduceMotion) {
-      camera.position.set(0.6, 0.2, camZ); camera.lookAt(0, 0, 0); stage.rotation.y = 0;
+      camera.position.set(lookX, 0.15, camZ); camera.lookAt(lookX, -0.05, 0); stage.rotation.y = 0;
     } else {
       mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
-      camera.position.set(Math.sin(t * 0.07) * 1.1 + mouse.x * 0.9, Math.sin(t * 0.05) * 0.45 - mouse.y * 0.55, camZ + Math.sin(t * 0.04) * 0.5);
-      camera.lookAt(mouse.x * 0.3, -mouse.y * 0.2, 0);
-      stage.rotation.y = Math.sin(t * 0.06) * 0.05 + mouse.x * 0.04;
+      camera.position.set(lookX + Math.sin(t * 0.055) * 0.48 + mouse.x * 0.4, 0.12 + Math.sin(t * 0.042) * 0.24 - mouse.y * 0.24, camZ + Math.sin(t * 0.033) * 0.26);
+      camera.lookAt(lookX + mouse.x * 0.16, -0.05 - mouse.y * 0.1, 0);
+      stage.rotation.y = Math.sin(t * 0.045) * 0.025 + mouse.x * 0.016;
     }
-    stepParticles(dt); rotor.rotation.x = rotorAng; writeColors(); updateNet(dt, t);
+    updateGust(dt, t);
+    stepParticles(dt); rotor.rotation.x = rotorAng;
+    if (rotor && rotor.children) {
+      const shimmer = 0.016 * nacellePulse * Math.sin(t * 6);
+      for (let b = 0; b < rotor.children.length; b++) {
+        const ch = rotor.children[b];
+        if (ch.children && ch.children.length) ch.rotation.z = shimmer * ((b % 2) ? 1 : -0.7);
+      }
+    }
+    writeColors(); updateNodes(t); updatePulses(dt);
     const t1 = performance.now();
     render();
     stats.jsSum += (t1 - t0);
-    if (stats.frames++ > 0) {                                  // skip first (compile) frame
+    if (stats.frames++ > 0) {
       stats.sum += dtReal * 1000; stats.win++; stats.winSum += dtReal * 1000;
       stats.avgFrameMs = stats.sum / (stats.frames - 1); stats.avgJsMs = stats.jsSum / stats.frames;
       if (adaptive && stats.win >= 90) {
@@ -660,15 +815,14 @@ export async function initHero({ reduceMotion, isSmall }) {
   function start() { if (!running) { running = true; clock.last = performance.now(); raf = requestAnimationFrame(frame); } }
   function stop() { running = false; cancelAnimationFrame(raf); }
 
-  // cheap warm-up: seed the particles (tip tracers already laid out along their helices) and advect a few steps
+  if (PATHS.length === 0) { buildPaths(); }
   for (let i = 0; i < N; i++) spawn(i, true);
-  const warm = reduceMotion ? 40 : 16;
-  for (let s = 0; s < warm; s++) stepParticles(1 / 40);         // ~ms of work: no need to yield
+  const warm = reduceMotion ? 40 : 18;
+  for (let s = 0; s < warm; s++) stepParticles(1 / 40);
+  writeColors();
   stats.setupMs = Math.round(performance.now() - tInit);
   try { if (renderer.compileAsync && renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene, camera); } catch (e) { /* compile lazily */ }
   const reveal = () => { canvas.classList.add('is-ready'); stats.firstFrameMs = Math.round(performance.now()); stats.initMs = Math.round(performance.now() - tInit); };
-  // Always run the loop. Under prefers-reduced-motion (including Windows "Animation
-  // effects off") we keep a slow, non-flashing drift of the binary streams instead of a freeze.
   start(); requestAnimationFrame(() => requestAnimationFrame(reveal));
   let inView = true;
   new IntersectionObserver(([e]) => { inView = e.isIntersecting; (inView && !document.hidden) ? start() : stop(); }, { threshold: 0 }).observe(canvas);

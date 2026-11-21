@@ -158,23 +158,141 @@ const I18N = {
     assistant: 'Assistente IA',
     typing: 'Assistente IA sta scrivendo',
   },
+  fi: {
+    greeting:
+      "Hei — voin vastata kysymyksiin Hamidin tutkimuksesta, julkaisuista, kokemuksesta ja taustasta, käyttäen vain tämän sivuston sisältöä. Jos haluat tavoittaa hänet henkilökohtaisesti, napauta Kysy suoraan Hamidilta. Voit myös pyytää tapaamista tai lähettää hänelle asiakirjan.",
+    research: 'Tutkimusaiheet',
+    researchPrompt: 'Mitkä ovat Hamidin tutkimusaiheet?',
+    publications: 'Julkaisut',
+    publicationsPrompt: 'Mitä Hamid on julkaissut äskettäin?',
+    experience: 'Kokemus',
+    experiencePrompt: 'Voisitko tiivistää Hamidin ammatillisen kokemuksen?',
+    ask: 'Kysy suoraan Hamidilta',
+    meeting: '📅 Pyydä tapaamista',
+    attach: '📎',
+    attachTitle: 'Lähetä asiakirja Hamidille (CV, lomake…)',
+    attachNote: 'Valinnainen viesti Hamidille',
+    attachSend: 'Lähetä tiedosto',
+    attachCancel: 'Peruuta',
+    attachPicked: 'Valittu',
+    title: 'Hamidin älykäs avustaja',
+    subtitle: 'Kysy mitä tahansa tai kirjoita suoraan Hamidille',
+    openChat: 'Avaa Hamidin älykäs avustaja',
+    closeChat: 'Sulje keskustelu',
+    newChat: '🗑️ Uusi keskustelu',
+    newChatAria: 'Aloita uusi keskustelu',
+    hamidReplied: '💬 Hamid vastasi:',
+    placeholder: 'Kirjoita kysymys…',
+    placeholderAsk: 'Kirjoita viesti Hamidille…',
+    placeholderMeeting: 'Vastaa tähän, tai kirjoita skip / cancel…',
+    yourMessage: 'Viestisi',
+    send: 'Lähetä',
+    askNote:
+      'Viestisi lähetetään Hamidille Telegramissa. Hän vastaa tässä ikkunassa. Nimi ja sähköposti ovat valinnaisia, jotta hän voi tavoittaa sinut — puhelinnumeroa ei koskaan kysytä.',
+    name: 'Nimi',
+    email: 'Sähköposti',
+    optional: 'Valinnainen',
+    askHint: 'Kirjoitat nyt suoraan Hamidille. Kerro, mitä haluaisit kysyä — hän vastaa tässä keskustelussa. Jatkokysymykset jäävät hänelle, kunnes poistut tästä tilasta.',
+    askReceipt: 'Viestisi lähetettiin Hamidille. Voit jatkaa kirjoittamista tässä — hänen vastauksensa ilmestyy tähän keskusteluun.',
+    fallback: 'Avustaja ei ole juuri nyt yhteydessä. Voit lähettää Hamidille sähköpostia: ' + EMAIL + '.',
+    skip: 'Ohita',
+    cancel: 'Peruuta',
+    you: 'Sinä',
+    hamid: 'Hamid',
+    note: 'Viesti',
+    assistant: 'Tekoälyavustaja',
+    typing: 'Tekoälyavustaja kirjoittaa',
+  },
 };
 
 function detectUiLang() {
   try {
-    const html = String(document.documentElement.lang || '').toLowerCase();
-    const nav = String(navigator.language || navigator.userLanguage || '').toLowerCase();
-    const pick = [html, nav].find((s) => s.startsWith('fa') || s.startsWith('it') || s.startsWith('en'));
-    if (pick?.startsWith('fa')) return 'fa';
-    if (pick?.startsWith('it')) return 'it';
+    const html = String(document.documentElement.getAttribute('data-lang') || document.documentElement.lang || '').toLowerCase();
+    const code = html.split(/[-_]/)[0];
+    if (I18N[code]) return code;
+    const nav = String(navigator.language || navigator.userLanguage || '').toLowerCase().split(/[-_]/)[0];
+    if (I18N[nav]) return nav;
   } catch {
     /* ignore */
   }
   return 'en';
 }
 
-const LANG = detectUiLang();
-const T = I18N[LANG] || I18N.en;
+let LANG = detectUiLang();
+let T = I18N[LANG] || I18N.en;
+
+function syncUiLang(lang) {
+  const next = I18N[lang] ? lang : detectUiLang();
+  LANG = next;
+  T = I18N[LANG] || I18N.en;
+}
+
+function refreshChatChrome() {
+  syncUiLang(document.documentElement.getAttribute('data-lang') || document.documentElement.lang);
+  const root = document.querySelector('.chat-root');
+  if (!root) return;
+  root.setAttribute('lang', LANG);
+  root.setAttribute('dir', LANG === 'fa' ? 'rtl' : 'ltr');
+  const setLabel = (sel, attr, val) => { const el = root.querySelector(sel); if (el && val) el.setAttribute(attr, val); };
+  const setText = (sel, val) => { const el = root.querySelector(sel); if (el && val != null) el.textContent = val; };
+  setLabel('#chatLaunch', 'aria-label', T.openChat);
+  setText('#chatTitle', T.title);
+  const sub = root.querySelector('.chat-panel__sub'); if (sub) sub.textContent = T.subtitle;
+  const neu = root.querySelector('#chatNew');
+  if (neu) { neu.textContent = T.newChat; neu.setAttribute('title', T.newChat); neu.setAttribute('aria-label', T.newChatAria); }
+  setLabel('#chatClose', 'aria-label', T.closeChat);
+  const note = root.querySelector('.chat-askmeta__note'); if (note) note.textContent = T.askNote;
+  const nameLab = root.querySelector('#chatAskMeta label:first-of-type');
+  if (nameLab && nameLab.childNodes[0]) nameLab.childNodes[0].textContent = T.name + ' ';
+  const emailLab = root.querySelector('#chatAskMeta label:last-of-type');
+  if (emailLab && emailLab.childNodes[0]) emailLab.childNodes[0].textContent = T.email + ' ';
+  const name = root.querySelector('#chatName'); if (name) name.placeholder = T.optional;
+  const email = root.querySelector('#chatEmail'); if (email) email.placeholder = T.optional;
+  const attachNote = root.querySelector('#chatAttachNote'); if (attachNote) attachNote.placeholder = T.attachNote;
+  const attachSend = root.querySelector('#chatAttachSend'); if (attachSend) attachSend.textContent = T.attachSend;
+  const attachCancel = root.querySelector('#chatAttachCancel'); if (attachCancel) attachCancel.textContent = T.attachCancel;
+  const your = root.querySelector('label[for="chatInput"]'); if (your) your.textContent = T.yourMessage;
+  setLabel('#chatAttach', 'aria-label', T.attachTitle); setLabel('#chatAttach', 'title', T.attachTitle);
+  setLabel('#chatSend', 'aria-label', T.send);
+  const input = root.querySelector('#chatInput');
+  if (input) {
+    try {
+      if (state.meetingMode && state.flowPlaceholder) input.placeholder = state.flowPlaceholder;
+      else input.placeholder = state.meetingMode ? T.placeholderMeeting : state.askMode ? T.placeholderAsk : T.placeholder;
+    } catch (e) { input.placeholder = T.placeholder; }
+  }
+  const chipsWrap = root.querySelector('#chatChips');
+  if (chipsWrap && !chipsWrap.dataset.busy) {
+    const btns = [...chipsWrap.querySelectorAll('.chat-chip')];
+    const next = [
+      { label: T.research, prompt: T.researchPrompt },
+      { label: T.publications, prompt: T.publicationsPrompt },
+      { label: T.experience, prompt: T.experiencePrompt },
+      { label: T.ask, ask: true },
+      { label: T.meeting, meeting: true },
+    ];
+    btns.forEach((btn, i) => { if (next[i]) btn.textContent = next[i].label; });
+  }
+  try {
+    const ev = new Event('input'); // trigger any placeholder refresh if hooked
+  } catch (e) { /* ignore */ }
+}
+
+document.addEventListener('ha:langchange', (e) => {
+  const lang = e && e.detail && e.detail.lang;
+  syncUiLang(lang || detectUiLang());
+  refreshChatChrome();
+  const input = document.querySelector('#chatInput');
+  // Re-apply the current compose placeholder if the helper exists.
+  if (input && typeof T !== 'undefined') {
+    const root = document.querySelector('.chat-root');
+    // The existing placeholder logic is re-run by a custom event some builds listen for;
+    // set a sensible default here, then let any later call overwrite it.
+    if (input.placeholder) {
+      /* leave; a later call in this module's placeholder fn will update on next interaction */
+    }
+  }
+});
 
 const $ = (s, c = document) => c.querySelector(s);
 
@@ -453,7 +571,8 @@ function build() {
   if (state.ready) return;
   const root = document.createElement('div');
   root.className = 'chat-root';
-  if (LANG === 'fa') root.setAttribute('lang', 'fa');
+  root.setAttribute('lang', LANG);
+  root.setAttribute('dir', LANG === 'fa' ? 'rtl' : 'ltr');
   root.innerHTML = `
     <button type="button" class="chat-launch" id="chatLaunch" aria-label="${escapeHtml(T.openChat)}" aria-expanded="false" aria-controls="chatPanel">
       <span class="chat-launch__icon" aria-hidden="true">
@@ -960,7 +1079,7 @@ async function sendChat(text) {
   try {
     const data = await api('/chat', {
       method: 'POST',
-      body: { ...sessionPayload(), message: text },
+      body: { ...sessionPayload(), message: text, lang: LANG },
     });
     showTyping(false);
     if (data.message) appendMsg(data.message);
@@ -1006,6 +1125,7 @@ async function sendAsk(text) {
       body: {
         ...sessionPayload(),
         message: text,
+        lang: LANG,
         name: ($('#chatName')?.value || '').trim(),
         email: ($('#chatEmail')?.value || '').trim(),
       },
