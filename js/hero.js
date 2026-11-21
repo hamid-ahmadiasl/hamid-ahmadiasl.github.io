@@ -1,7 +1,8 @@
-/* Hero scene: a procedurally built 3-bladed wind turbine with a spinning rotor, CFD streamlines through
-   the rotor disk into a swirling helical wake with tip vortices (advected particles with trails, velocity
-   colormap) that dissolves into a breathing neural network with pulses,
-   merged in depth and lifted by UnrealBloom. Loaded lazily by main.js; failure falls back to CSS. */
+/* Hero scene: a procedurally built 3-bladed wind turbine with a spinning rotor, CFD streamlines of
+   tiny binary 0/1 glyphs through the rotor disk into a swirling helical wake with tip vortices
+   (advected particles, cyan/blue, fading along each trail) that dissolve into a breathing neural
+   network with pulses, merged in depth and lifted by UnrealBloom. Loaded lazily by main.js; failure
+   falls back to CSS. */
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -61,9 +62,11 @@ export async function initHero({ reduceMotion, isSmall }) {
     vx = ua; vy = (ur * y - wt * z) / r; vz = (ur * z + wt * y) / r; speed = Math.hypot(ua, ur, wt);
   }
 
-  /* ===== Streamline particles with trails (first NTIP particles are tip-vortex tracers) ===== */
-  let N = isSmall ? 420 : 1200;
-  const K = isSmall ? 11 : 13;                                 // vertices per trail
+  /* ===== Streamline particles with trails of tiny binary glyphs (first NTIP are tip-vortex tracers).
+     0/1 are pre-rendered into a 2-cell canvas atlas and drawn as screen-space quads, tinted cyan/blue
+     and faded along each trail. Fewer, denser streams than the old line ribbons; fewer still on mobile. ===== */
+  let N = isSmall ? 80 : 170;
+  const K = isSmall ? 20 : 28;                                 // glyphs per trail (dense packing)
   const NTIP = Math.round(N * 0.17);
   let X0 = -6, X1 = 6, YH = 3.2, ZH = 2.6, XC = 1.8;            // inlet / outlet / spawn extents (rig units), set in layout
   const T = new THREE.Vector3(3, -0.6, 0);                     // where the wake is drawn to (the network), rig units
@@ -73,8 +76,9 @@ export async function initHero({ reduceMotion, isSmall }) {
   };
   const hist = new Float32Array(N * K * 3);
   const col = new Float32Array(N * K * 3);
+  const bits = new Float32Array(N * K);
   const fade = new Float32Array(K);
-  for (let k = 0; k < K; k++) fade[k] = k === K - 1 ? 0 : Math.pow(1 - k / (K - 1), 1.3);
+  for (let k = 0; k < K; k++) fade[k] = k === K - 1 ? 0 : Math.pow(1 - k / (K - 1), 1.15);
 
   function spawn(i, anywhere) {
     let x, y, z;
@@ -91,47 +95,78 @@ export async function initHero({ reduceMotion, isSmall }) {
       P.age[i] = 0; P.life[i] = 14 + rnd() * 10;
     }
     P.x[i] = x; P.y[i] = y; P.z[i] = z;
-    const b = i * K * 3;
-    for (let k = 0; k < K; k++) { hist[b + k * 3] = x; hist[b + k * 3 + 1] = y; hist[b + k * 3 + 2] = z; }
+    const b = i * K * 3, bb = i * K;
+    for (let k = 0; k < K; k++) {
+      hist[b + k * 3] = x; hist[b + k * 3 + 1] = y; hist[b + k * 3 + 2] = z;
+      bits[bb + k] = rnd() < 0.5 ? 0 : 1;
+    }
   }
 
-  /* Trails drawn as screen-space ribbons: one instanced quad per trail segment, reading the
-     history buffer directly (instance j = point j -> point j+1; the segment bridging two particles
-     has a zero-colour end and is collapsed in the shader). */
+  function makeGlyphAtlas() {
+    const cell = 64, c = document.createElement('canvas');
+    c.width = cell * 2; c.height = cell;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 54px ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(140, 210, 255, 0.9)';
+    ctx.shadowBlur = 8;
+    ctx.fillText('0', cell * 0.5, cell * 0.54);
+    ctx.fillText('1', cell * 1.5, cell * 0.54);
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+  const glyphAtlas = makeGlyphAtlas();
+
+  /* One screen-space glyph quad per trail point, oriented along the local segment and sized in CSS pixels. */
   const ribGeo = new THREE.InstancedBufferGeometry();
-  ribGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, -1, 0, 1, -1, 0, 1, 1, 0, 0, -1, 0, 1, 1, 0, 0, 1, 0], 3));
+  ribGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0], 3));
   const hBuf = new THREE.InstancedInterleavedBuffer(hist, 3, 1).setUsage(THREE.DynamicDrawUsage);
   const cBuf = new THREE.InstancedInterleavedBuffer(col, 3, 1).setUsage(THREE.DynamicDrawUsage);
+  const bBuf = new THREE.InstancedBufferAttribute(bits, 1).setUsage(THREE.DynamicDrawUsage);
   ribGeo.setAttribute('iA', new THREE.InterleavedBufferAttribute(hBuf, 3, 0));
   ribGeo.setAttribute('iB', new THREE.InterleavedBufferAttribute(hBuf, 3, 3));
   ribGeo.setAttribute('cA', new THREE.InterleavedBufferAttribute(cBuf, 3, 0));
-  ribGeo.setAttribute('cB', new THREE.InterleavedBufferAttribute(cBuf, 3, 3));
+  ribGeo.setAttribute('aBit', bBuf);
   ribGeo.instanceCount = N * K - 1;
   const ribMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { uRes: { value: new THREE.Vector2(1, 1) }, uW: { value: isSmall ? 1.7 : 2.0 } },
-    vertexShader: `attribute vec3 iA; attribute vec3 iB; attribute vec3 cA; attribute vec3 cB;
-      uniform vec2 uRes; uniform float uW; varying vec3 vC; varying float vS;
+    uniforms: {
+      uRes: { value: new THREE.Vector2(1, 1) },
+      uPx: { value: isSmall ? 7.0 : 8.0 },
+      uAtlas: { value: glyphAtlas }
+    },
+    vertexShader: `attribute vec3 iA; attribute vec3 iB; attribute vec3 cA; attribute float aBit;
+      uniform vec2 uRes; uniform float uPx; varying vec2 vUv; varying vec3 vC;
       void main(){
-        float mA=max(cA.r,max(cA.g,cA.b)), mB=max(cB.r,max(cB.g,cB.b));
-        if(min(mA,mB) < 1e-4){ gl_Position=vec4(2.,2.,2.,1.); vC=vec3(0.); vS=0.; return; }
-        vec4 a=projectionMatrix*modelViewMatrix*vec4(iA,1.), b=projectionMatrix*modelViewMatrix*vec4(iB,1.);
+        float mA=max(cA.r,max(cA.g,cA.b));
+        if(mA < 1e-4){ gl_Position=vec4(2.,2.,2.,1.); vC=vec3(0.); vUv=vec2(0.); return; }
+        vec4 a=projectionMatrix*modelViewMatrix*vec4(iA,1.);
+        vec4 b=projectionMatrix*modelViewMatrix*vec4(iB,1.);
         vec2 sa=a.xy/a.w*uRes, sb=b.xy/b.w*uRes, d=sb-sa; float l=length(d);
-        vec2 n = l>1e-4 ? vec2(-d.y,d.x)/l : vec2(0.,1.);
-        vec4 p=mix(a,b,position.x);
-        float w=uW*(0.55+0.6*clamp(max(mA,mB)*2.5,0.,1.));
-        p.xy += n*position.y*w/uRes*p.w;
-        gl_Position=p; vC=mix(cA,cB,position.x); vS=position.y;
+        vec2 tn = l>1e-4 ? d/l : vec2(1.,0.);
+        vec2 nn = vec2(-tn.y, tn.x);
+        a.xy += (tn*position.x*uPx + nn*position.y*uPx*0.82)/uRes*a.w;
+        gl_Position=a;
+        vUv=vec2(aBit*0.5 + (position.x*0.5+0.5)*0.5, position.y*0.5+0.5);
+        vC=cA;
       }`,
-    fragmentShader: `varying vec3 vC; varying float vS; void main(){ float e=1.-vS*vS; gl_FragColor=vec4(vC*e,1.); }`
+    fragmentShader: `uniform sampler2D uAtlas; varying vec2 vUv; varying vec3 vC;
+      void main(){ float a=texture2D(uAtlas,vUv).a; if(a<0.04) discard; gl_FragColor=vec4(vC*a,1.); }`
   });
   const streams = new THREE.Mesh(ribGeo, ribMat);
   streams.frustumCulled = false; streams.renderOrder = 3;
   rig.add(streams);
   let nAct = N;
 
-  // velocity colormap: slow indigo -> blue -> teal -> warm white (fast)
-  const stops = [[0, .05, .12, .62], [.22, .05, .42, 1.0], [.45, .10, .86, 1.0], [.62, .90, .97, 1.0], [.80, 1.0, .55, .12], [1, 1.0, .14, .10]];
+  // velocity colormap stays in cyan / blue (deep indigo -> blue -> bright cyan)
+  const stops = [[0, .06, .18, .55], [.35, .06, .48, .98], [.68, .18, .82, 1.0], [1, .62, .96, 1.0]];
   function cmap(t, out) {
     for (let s = 1; s < stops.length; s++) {
       if (t <= stops[s][0]) {
@@ -139,15 +174,15 @@ export async function initHero({ reduceMotion, isSmall }) {
         out[0] = a[1] + (b[1] - a[1]) * f; out[1] = a[2] + (b[2] - a[2]) * f; out[2] = a[3] + (b[3] - a[3]) * f; return;
       }
     }
-    out[0] = 1; out[1] = .14; out[2] = .1;
+    out[0] = .62; out[1] = .96; out[2] = 1;
   }
   const rgb = [0, 0, 0];
-  const GAIN = isSmall ? 0.55 : 0.44;
+  const GAIN = isSmall ? 1.15 : 1.05;
   let recAcc = 0, doShift = true;
 
   function stepParticles(dt) {
     simT += dt; rotorAng = OMEGA * simT;
-    recAcc += dt; doShift = recAcc >= 0.1; if (doShift) recAcc = 0;
+    recAcc += dt; doShift = recAcc >= 0.032; if (doShift) recAcc = 0;
     for (let i = 0; i < nAct; i++) {
       let x = P.x[i], y = P.y[i], z = P.z[i];
       flowAt(x, y, z);
@@ -166,8 +201,12 @@ export async function initHero({ reduceMotion, isSmall }) {
       P.age[i] += dt;
       if (x > X1 || Math.abs(y) > YH * 1.6 || Math.abs(z) > ZH * 1.8 || P.age[i] > P.life[i]) spawn(i, false);
       else {
-        const b = i * K * 3;
-        if (doShift) hist.copyWithin(b + 3, b, b + (K - 1) * 3);
+        const b = i * K * 3, bb = i * K;
+        if (doShift) {
+          hist.copyWithin(b + 3, b, b + (K - 1) * 3);
+          bits.copyWithin(bb + 1, bb, bb + K - 1);
+          bits[bb] = rnd() < 0.5 ? 0 : 1;
+        }
         hist[b] = x; hist[b + 1] = y; hist[b + 2] = z;
       }
       P.inten[i] = smooth(X0, X0 + 3.2, P.x[i]) * (1 - smooth(X1 - 1.6, X1, P.x[i])) *
@@ -176,16 +215,16 @@ export async function initHero({ reduceMotion, isSmall }) {
   }
   function writeColors() {
     for (let i = 0; i < nAct; i++) {
-      // free stream ~ bright cyan, slowed wake = cool deep blue/indigo, tip vortices = orange/red
-      const cv = clamp((P.sp[i] / U - 0.35) / 0.75, 0, 1) * 0.58 + P.wk[i] * 0.48;
+      // free stream ~ bright cyan, slowed wake = deeper blue; tip vortices stay in the same cyan/blue range
+      const cv = clamp((P.sp[i] / U - 0.35) / 0.75, 0, 1) * 0.7 + P.wk[i] * 0.3;
       cmap(clamp(cv, 0, 1), rgb);
-      const g = P.inten[i] * GAIN * (0.8 + 1.3 * P.wk[i]), b = i * K * 3;
+      const g = P.inten[i] * GAIN * (0.85 + 0.55 * P.wk[i]), b = i * K * 3;
       for (let k = 0; k < K; k++) {
         const f = fade[k] * g, o = b + k * 3;
         col[o] = rgb[0] * f; col[o + 1] = rgb[1] * f; col[o + 2] = rgb[2] * f;
       }
     }
-    hBuf.needsUpdate = true; cBuf.needsUpdate = true;
+    hBuf.needsUpdate = true; cBuf.needsUpdate = true; bBuf.needsUpdate = true;
   }
 
   /* ===== Wind turbine, built procedurally (low-poly): tapered tower, nacelle, spinner, three tapered,
@@ -553,7 +592,7 @@ export async function initHero({ reduceMotion, isSmall }) {
     ann.scale.setScalar(narrow ? 0.88 : 1);
     rig.rotation.y = YAW; rig.updateMatrix();
     T.copy(netAt).applyMatrix4(rig.matrix.clone().invert());       // network centre in the turbine frame
-    ribMat.uniforms.uRes.value.set(W * pixelRatio / 2, H * pixelRatio / 2); ribMat.uniforms.uW.value = (isSmall ? 1.7 : 2.0) * pixelRatio;
+    ribMat.uniforms.uRes.value.set(W * pixelRatio / 2, H * pixelRatio / 2); ribMat.uniforms.uPx.value = (isSmall ? 7.0 : 8.0) * pixelRatio / 2;
     edgeMat.resolution.set(W * pixelRatio, H * pixelRatio);
     pointMat.uniforms.uScale.value = (H * pixelRatio) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   }
@@ -579,10 +618,10 @@ export async function initHero({ reduceMotion, isSmall }) {
   function degrade() {
     stats.level++;
     if (stats.level === 1) {
-      pixelRatio = Math.min(pixelRatio, 1); nAct = Math.floor(N * 0.65); layout();
+      pixelRatio = Math.min(pixelRatio, 1); nAct = Math.floor(N * 0.65); ribGeo.instanceCount = nAct * K - 1; layout();
       if (bloom) bloom.resolution.set(W / 2, H / 2);
     } else if (stats.level === 2) {
-      useBloom = false; nAct = Math.floor(N * 0.4);
+      useBloom = false; nAct = Math.floor(N * 0.4); ribGeo.instanceCount = Math.max(1, nAct * K - 1);
       for (let i = nAct * K * 3; i < col.length; i++) col[i] = 0;
     }
   }

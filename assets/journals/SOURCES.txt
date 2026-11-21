@@ -18,6 +18,3 @@ No official logo could be retrieved from the journal websites for:
   The ICEM CFD book / Azad University – South Tehran Branch
 Those covers use typographic monogram badges, not imitation official logos.
 
-assets/edu/unimib-logo.png
-  Source: https://www.unimib.it/sites/default/files/logo.png
-  Official logo used in the header of unimib.it (Università degli Studi di Milano-Bicocca).

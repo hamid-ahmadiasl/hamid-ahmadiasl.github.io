@@ -11,9 +11,12 @@ const WORKER_URL = 'https://hamid-site-assistant.ha-ahmadiasl.workers.dev';
 
 const EMAIL = 'hmd.ahmadiasl@gmail.com';
 const STORAGE_ID = 'ha-chat-visitor-id';
+const STORAGE_SESSION = 'ha-chat-session-visitor-id';
 const STORAGE_LOG = 'ha-chat-history';
 const STORAGE_SEEN = 'ha-chat-last-seen';
 const STORAGE_CONV = 'ha-chat-conversation-id';
+const STORAGE_PREV = 'ha-chat-previous-visitors';
+const STORAGE_PROFILE = 'ha-chat-profile';
 const POLL_OPEN_MS = 5000;
 const POLL_PENDING_MS = 30000;
 const MAX_LOCAL = 80;
@@ -190,17 +193,106 @@ function uuid() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-function visitorId() {
+function isVisitorId(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ''));
+}
+
+function readPrevVisitors() {
   try {
-    let id = localStorage.getItem(STORAGE_ID);
-    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
-      id = uuid();
-      localStorage.setItem(STORAGE_ID, id);
-    }
-    return id;
+    const list = JSON.parse(localStorage.getItem(STORAGE_PREV) || '[]');
+    return Array.isArray(list) ? list.filter((row) => row && isVisitorId(row.id)) : [];
   } catch {
-    return uuid();
+    return [];
   }
+}
+
+function writePrevVisitors(list) {
+  try {
+    localStorage.setItem(STORAGE_PREV, JSON.stringify((list || []).slice(0, 10)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function archiveVisitor(id, seenTs) {
+  if (!isVisitorId(id)) return;
+  const lastSeenAt = Number(seenTs) || lastSeen() || Date.now();
+  const next = [{ id, lastSeen: lastSeenAt }, ...readPrevVisitors().filter((row) => row.id !== id)];
+  writePrevVisitors(next);
+}
+
+function clearStaleProfile() {
+  try {
+    localStorage.removeItem(STORAGE_LOG);
+    localStorage.removeItem(STORAGE_PROFILE);
+    localStorage.removeItem('ha-chat-name');
+    localStorage.removeItem('ha-chat-email');
+    localStorage.removeItem('ha-chat-phone');
+    localStorage.removeItem('ha-chat-meeting');
+    sessionStorage.removeItem(STORAGE_LOG);
+  } catch {
+    /* ignore */
+  }
+}
+
+function beginSession({ archiveOld = true } = {}) {
+  let previous = null;
+  try {
+    previous = sessionStorage.getItem(STORAGE_SESSION) || localStorage.getItem(STORAGE_ID);
+  } catch {
+    previous = null;
+  }
+  if (archiveOld && previous && previous !== state.visitorId) archiveVisitor(previous, lastSeen());
+  else if (archiveOld && state.visitorId) archiveVisitor(state.visitorId, lastSeen());
+  else if (archiveOld && previous) archiveVisitor(previous, lastSeen());
+  const id = uuid();
+  state.visitorId = id;
+  state.newSession = true;
+  state.conversationId = null;
+  try {
+    sessionStorage.setItem(STORAGE_SESSION, id);
+    sessionStorage.removeItem(STORAGE_LOG);
+    localStorage.removeItem(STORAGE_ID);
+    clearStaleProfile();
+  } catch {
+    /* ignore */
+  }
+  rotateConversationId();
+  return id;
+}
+
+function visitorId() {
+  if (state.visitorId && isVisitorId(state.visitorId)) return state.visitorId;
+  try {
+    if (!isReloadNavigation()) {
+      const sid = sessionStorage.getItem(STORAGE_SESSION);
+      if (isVisitorId(sid)) {
+        state.visitorId = sid;
+        return sid;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return beginSession({ archiveOld: true });
+}
+
+function sessionPayload() {
+  const payload = {
+    visitorId: visitorId(),
+    conversationId: conversationId(),
+    newSession: !!state.newSession,
+    page: currentPage(),
+  };
+  try {
+    if (typeof window.haVisitContext === 'function') {
+      const ctx = window.haVisitContext();
+      if (ctx && typeof ctx === 'object') payload.context = ctx;
+    }
+  } catch {
+    /* ignore */
+  }
+  return payload;
 }
 
 function isReloadNavigation() {
@@ -247,6 +339,8 @@ function clearLocalHistory() {
 }
 
 function loadLocal() {
+  // visitorId() already starts a new session on reload / new visit.
+  visitorId();
   if (isReloadNavigation()) {
     clearLocalHistory();
     return [];
@@ -341,6 +435,8 @@ let state = {
   flowOptions: null,
   sessionFresh: true,
   conversationId: null,
+  visitorId: null,
+  newSession: false,
 };
 
 function chips() {
@@ -479,18 +575,16 @@ function startFreshWelcome({ keepLastTs = false } = {}) {
   state.flowOptions = null;
   state.flowPlaceholder = '';
   saveLocal(state.messages);
-  if (keepLastTs) state.lastTs = lastSeen();
-  else {
-    state.lastTs = Date.now();
-    setLastSeen(state.lastTs);
-  }
+  // A new session has no server history of its own. Do not reuse lastSeen from
+  // an older visitor id, or the widget would skip genuine new replies.
+  state.lastTs = 0;
   rerender();
   syncComposer();
 }
 
 function startNewChat() {
+  beginSession({ archiveOld: true });
   clearLocalHistory();
-  rotateConversationId();
   leaveModesForChat();
   startFreshWelcome({ keepLastTs: false });
 }
@@ -835,6 +929,7 @@ async function api(path, opts = {}) {
     err.data = data;
     throw err;
   }
+  if (['/chat', '/ask', '/meeting', '/upload', '/contact'].some((p) => path === p || path.startsWith(p + '?'))) state.newSession = false;
   return data;
 }
 
@@ -865,7 +960,7 @@ async function sendChat(text) {
   try {
     const data = await api('/chat', {
       method: 'POST',
-      body: { visitorId: visitorId(), conversationId: conversationId(), message: text, page: currentPage() },
+      body: { ...sessionPayload(), message: text },
     });
     showTyping(false);
     if (data.message) appendMsg(data.message);
@@ -909,12 +1004,10 @@ async function sendAsk(text) {
     const data = await api('/ask', {
       method: 'POST',
       body: {
-        visitorId: visitorId(),
-        conversationId: conversationId(),
+        ...sessionPayload(),
         message: text,
         name: ($('#chatName')?.value || '').trim(),
         email: ($('#chatEmail')?.value || '').trim(),
-        page: currentPage(),
       },
     });
     if (data.message) appendMsg(data.message);
@@ -971,12 +1064,10 @@ async function sendMeeting(text, action, opts = {}) {
     const data = await api('/meeting', {
       method: 'POST',
       body: {
-        visitorId: visitorId(),
-        conversationId: conversationId(),
+        ...sessionPayload(),
         action,
         message: text,
         lang: LANG,
-        page: currentPage(),
         name: ($('#chatName')?.value || '').trim(),
         email: ($('#chatEmail')?.value || '').trim(),
       },
@@ -1051,6 +1142,13 @@ async function sendUpload() {
     const form = new FormData();
     form.append('visitorId', visitorId());
     form.append('conversationId', conversationId());
+    form.append('newSession', state.newSession ? 'true' : 'false');
+    try {
+      const ctx = typeof window.haVisitContext === 'function' ? window.haVisitContext() : null;
+      if (ctx) form.append('context', JSON.stringify(ctx));
+    } catch {
+      /* ignore */
+    }
     form.append('file', file, file.name);
     if (note) form.append('note', note);
     form.append('page', currentPage());
@@ -1080,12 +1178,44 @@ async function sendUpload() {
   }
 }
 
+let lastPrevPoll = 0;
+
+async function pollPreviousReplies() {
+  const now = Date.now();
+  if (now - lastPrevPoll < 30000) return 0;
+  lastPrevPoll = now;
+  const prev = readPrevVisitors();
+  if (!prev.length) return 0;
+  let added = 0;
+  const updated = [];
+  for (const row of prev) {
+    try {
+      const res = await api(`/messages?visitorId=${encodeURIComponent(row.id)}&since=${Number(row.lastSeen) || 0}`);
+      const hamid = (res.messages || []).filter((m) => m && m.role === 'hamid' && m.text);
+      let maxTs = Number(row.lastSeen) || 0;
+      for (const m of hamid) {
+        const text = String(m.text).startsWith(T.hamidReplied) ? m.text : `${T.hamidReplied} ${m.text}`;
+        appendMsg({ ...m, text, source: m.source || 'hamid-missed' }, false);
+        added += 1;
+        if (Number(m.ts) > maxTs) maxTs = Number(m.ts);
+      }
+      updated.push({ id: row.id, lastSeen: maxTs });
+    } catch {
+      updated.push(row);
+    }
+  }
+  writePrevVisitors(updated);
+  if (added) saveLocal(state.messages);
+  return added;
+}
+
 async function pollOnce() {
   if (!workerBase()) return;
   try {
     const since = state.lastTs || 0;
     const data = await api(`/messages?visitorId=${encodeURIComponent(visitorId())}&since=${since}`);
-    const added = mergeRemote(data.messages);
+    let added = mergeRemote(data.messages);
+    added += await pollPreviousReplies();
     if (added && state.open) markSeen();
     updateDot();
   } catch {

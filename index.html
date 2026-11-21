@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=19">
   <!-- Three.js via ES module import map (used in js/main.js) -->
   <script type="importmap">
   {
@@ -105,6 +105,7 @@
       <h1 class="hero__name hero-anim">Hamid <span class="grad">Ahmadi Asl</span></h1>
       <p class="hero__title hero-anim">AI &amp; Computational Science Researcher with a Mechanical Engineering Background</p>
       <p class="hero__lead hero-anim">Bridging engineering knowledge and artificial intelligence to develop practical solutions for complex real-world problems. MSc student in Artificial Intelligence for Science and Technology at the University of Milano-Bicocca.</p>
+      <blockquote class="hero__quote hero-anim">“What excites me most is working on research where physics, engineering and artificial intelligence come together.”</blockquote>
       <div class="hero__cta hero-anim">
         <a class="btn btn--primary" href="https://scholar.google.com/citations?user=Ccy6x7cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3Zm-6 9.2v4.3C6 18.4 8.7 20 12 20s6-1.6 6-3.5v-4.3l-6 3.3-6-3.3Z"/></svg>
@@ -229,13 +230,15 @@
   <footer class="footer">
     <p>© <span id="year">2026</span> Hamid Ahmadi Asl</p>
     <a href="#top">Back to top ↑</a>
+    <p class="footer__note">This site records anonymous visit statistics and chat messages to improve responses; no IP addresses are stored.</p>
   </footer>
 
   <!-- GSAP + ScrollTrigger (content stays visible if these fail to load) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <link rel="modulepreload" href="js/hero.js?v=17">
-  <script type="module" src="js/main.js?v=17"></script>
-  <script type="module" src="js/chat.js?v=16"></script>
+  <link rel="modulepreload" href="js/hero.js?v=18">
+  <script type="module" src="js/main.js?v=18"></script>
+  <script src="js/stats.js?v=19" defer></script>
+  <script type="module" src="js/chat.js?v=19"></script>
 </body>
 </html>
