@@ -61,3 +61,13 @@ Posts live in `data/posts.json`. Add an object to the `"posts"` list (newest dat
 - For a download, upload the PDF/PPTX into the `files/` folder (GitHub → open `files` → Add file → Upload files) and set `"file": "files/<name>"`.
 - Keep the JSON valid (commas between entries, double quotes). If the file is empty or missing, the section shows a friendly “coming soon” message.
 - `fetch()` doesn't work from `file://`; preview locally with `python3 -m http.server`.
+
+## Search engines
+The site ships `robots.txt` and `sitemap.xml` (nine public pages; the 404 page is excluded and marked `noindex`). After uploading a new version:
+
+1. Open [Google Search Console](https://search.google.com/search-console), add `https://hamid-ahmadiasl.github.io`, and verify the property. If Google gives you an HTML `<meta name="google-site-verification" …>` tag, it can be added to every page’s `<head>` — it is not in this zip yet, because the token has to come from your own Search Console account.
+2. In Search Console, submit `https://hamid-ahmadiasl.github.io/sitemap.xml`.
+3. Do the same in [Bing Webmaster Tools](https://www.bing.com/webmasters) (you can import the Google verification).
+4. Add `https://hamid-ahmadiasl.github.io` as the website on your LinkedIn, Google Scholar and GitHub profiles.
+
+Language variants (`?lang=it`, `?lang=fi`, `?lang=fa`) are applied in the browser only; the HTML source stays English. Alternate `hreflang` URLs are therefore not advertised; each page’s canonical URL is the English address without a `lang` query.

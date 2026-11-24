@@ -2,7 +2,7 @@
    Data: data/posts.json, each post { title, topic, description, date (YYYY-MM-DD, optional),
    url (LinkedIn link, optional), file (e.g. "files/guide.pdf", optional) }. */
 const TOPIC_ORDER = ['AI Foundations', 'ML Fundamentals', 'Neural Networks', 'AI × CFD', 'AI Perspectives', 'CFD', 'Machine Learning', 'HPC', 'Python', 'Engineering Design'];
-const LINKEDIN = 'http://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab';
+const LINKEDIN = 'https://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab';
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tr = (key, fallback) => (window.HA_I18N && HA_I18N.t(key)) || fallback;

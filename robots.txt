@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hamid-ahmadiasl.github.io/sitemap.xml
