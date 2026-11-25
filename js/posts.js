@@ -1,8 +1,10 @@
 /* Training & Insights: shared card + filter code for insights.html (full list) and the homepage preview.
    Data: data/posts.json, each post { title, topic, description, date (YYYY-MM-DD, optional),
-   url (LinkedIn link, optional), file (e.g. "files/guide.pdf", optional) }. */
+   url (LinkedIn link, optional), file (e.g. "files/guide.pdf", optional),
+   video / poster / videoWidth / videoHeight (optional embedded MP4) }.
+   description may include <strong> only; everything else is escaped. */
 const TOPIC_ORDER = ['AI Foundations', 'ML Fundamentals', 'Neural Networks', 'AI × CFD', 'AI Perspectives', 'CFD', 'Machine Learning', 'HPC', 'Python', 'Engineering Design'];
-const LINKEDIN = 'https://www.linkedin.com/in/hamid-ahmadi-asl-bb3005ab/';
+const LINKEDIN = 'https://www.linkedin.com/in/hamid-ahmadiasl/';
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tr = (key, fallback) => (window.HA_I18N && HA_I18N.t(key)) || fallback;
@@ -29,6 +31,19 @@ export async function loadPosts() {
   return { posts, topics };
 }
 
+const rich = t => esc(t).replace(/&lt;(\/?strong)&gt;/gi, '<$1>');
+const mediaHTML = p => {
+  const poster = p.poster ? esc(p.poster) : '';
+  const w = Number(p.videoWidth) || 720, h = Number(p.videoHeight) || 900;
+  if (p.video) {
+    return `<div class="post__media"><video controls preload="none" playsinline poster="${poster}" width="${w}" height="${h}" title="${esc(p.title)}"><source src="${esc(p.video)}" type="video/mp4"></video></div>`;
+  }
+  if (poster && p.url) {
+    const ext = p.url === '#' ? '' : ' target="_blank" rel="noopener noreferrer"';
+    return `<a class="post__media post__media--link" href="${esc(p.url)}"${ext}><img src="${poster}" alt="" width="${w}" height="${h}" loading="lazy" decoding="async"><span class="post__play" aria-hidden="true"></span><span class="visually-hidden">${esc(tr('posts.viewLi', 'View on LinkedIn'))}</span></a>`;
+  }
+  return '';
+};
 export function cardHTML(p, topics, linkTopics = false) {
   const topic = topicOf(p), btns = [], hue = topics.indexOf(topic) % 5;
   if (p.url) btns.push(`<a class="btn btn--primary" href="${esc(p.url)}"${p.url === '#' ? '' : ' target="_blank" rel="noopener noreferrer"'}><span>${esc(tr('posts.viewLi', 'View on LinkedIn'))}</span> <span aria-hidden="true">↗</span></a>`);
@@ -38,8 +53,9 @@ export function cardHTML(p, topics, linkTopics = false) {
     : `<span class="post__topic" data-hue="${hue}">${esc(topic)}</span>`;
   return `<article class="card card--hover post" data-topic="${esc(topic)}">
       <div class="post__top">${badge}${p.date ? `<time class="muted" datetime="${esc(p.date)}">${fmtDate(p.date)}</time>` : ''}</div>
-      <h3>${esc(p.title)}</h3>
-      ${p.description ? `<p>${esc(p.description)}</p>` : ''}
+      <h3 dir="ltr">${esc(p.title)}</h3>
+      ${mediaHTML(p)}
+      ${p.description ? `<p dir="ltr">${rich(p.description)}</p>` : ''}
       ${btns.length ? `<div class="post__actions">${btns.join('')}</div>` : ''}
     </article>`;
 }

@@ -58,6 +58,7 @@ Posts live in `data/posts.json`. Add an object to the `"posts"` list (newest dat
 
 - `title` is required. `topic` creates/joins a filter tab automatically (tabs are generated from the topics in the file).
 - `url` shows a **View on LinkedIn** button; `file` shows a **Download** button. Use either or both.
+- Optional `video`, `poster`, `videoWidth` and `videoHeight` embed a self-hosted MP4 on the card (`preload="none"`, no autoplay) with a poster image, and still include the LinkedIn link.
 - For a download, upload the PDF/PPTX into the `files/` folder (GitHub → open `files` → Add file → Upload files) and set `"file": "files/<name>"`.
 - Keep the JSON valid (commas between entries, double quotes). If the file is empty or missing, the section shows a friendly “coming soon” message.
 - `fetch()` doesn't work from `file://`; preview locally with `python3 -m http.server`.

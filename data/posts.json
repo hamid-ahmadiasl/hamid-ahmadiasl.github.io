@@ -1,6 +1,18 @@
 {
   "posts": [
     {
+      "title": "Explore or exploit?",
+      "topic": "ML Fundamentals",
+      "description": "The core dilemma of <strong>reinforcement learning</strong>. Your favourite restaurant, or something new tonight? That's the <strong>multi-armed bandit</strong> problem. Watch three diners find out who ends up happiest, and how AI agents learn the same way.",
+      "date": "2026-11-25",
+      "url": "https://www.linkedin.com/posts/hamid-ahmadiasl_reinforcementlearning-multiarmedbandit-machinelearning-ugcPost-7531339836079800320-XX9L/",
+      "file": "",
+      "video": "assets/insights/bandit.mp4",
+      "poster": "assets/insights/bandit-poster.jpg",
+      "videoWidth": 720,
+      "videoHeight": 900
+    },
+    {
       "title": "Self-Organizing Maps (SOMs)",
       "topic": "Neural Networks",
       "description": "A visual guide to how Self-Organizing Maps organize high-dimensional data into a 2D map without labels: neuron competition, the Best Matching Unit (BMU), neighborhood learning and topology preservation.",
