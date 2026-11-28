@@ -280,6 +280,7 @@
   add("ins.filter", "Filter posts by topic", "فیلتر نوشته‌ها بر اساس موضوع", "Filtra i post per argomento");
   add("ins.noscript", "Enable JavaScript to see the posts, or visit the LinkedIn profile.", "برای دیدن نوشته‌ها جاوااسکریپت را فعال کنید، یا به پروفایل LinkedIn سر بزنید.", "Abilita JavaScript per vedere i post, oppure visita il profilo LinkedIn.");
   add("posts.viewLi", "View on LinkedIn", "مشاهده در LinkedIn", "Vedi su LinkedIn");
+  add("posts.watchLi", "Watch on LinkedIn", "تماشا در LinkedIn", "Guarda su LinkedIn");
   add("posts.download", "Download", "دانلود", "Scarica");
   add("posts.soon", "New training posts are coming soon.", "نوشته‌های آموزشی تازه به‌زودی منتشر می‌شوند.", "Nuovi post formativi arriveranno a breve.");
   add("posts.fail", "Posts could not be loaded right now.", "در حال حاضر بارگذاری نوشته‌ها ممکن نشد.", "I post non possono essere caricati in questo momento.");
@@ -492,6 +493,7 @@
     "ins.filter": "Suodata julkaisuja aiheen mukaan",
     "ins.noscript": "Ota JavaScript käyttöön nähdäksesi julkaisut, tai käy LinkedIn-profiilissa.",
     "posts.viewLi": "Näytä LinkedInissä",
+    "posts.watchLi": "Katso LinkedInissä",
     "posts.download": "Lataa",
     "posts.soon": "Uusia koulutusjulkaisuja on tulossa pian.",
     "posts.fail": "Julkaisuja ei voitu ladata juuri nyt.",

@@ -1,16 +1,22 @@
 {
   "posts": [
     {
+      "title": "What is Ant Colony Optimization (ACO)?",
+      "topic": "Optimization",
+      "description": "How do computers take inspiration from it? τ ← (1−ρ)τ + Δτ: every <strong>pheromone</strong> trail slowly fades, and grows stronger each time an ant uses it. Watch tiny ants find the shortest path with no map and no leader, the core idea of <strong>swarm intelligence</strong>.",
+      "date": "2026-11-27",
+      "url": "https://www.linkedin.com/feed/update/urn:li:activity:7532031958206566400/",
+      "file": "",
+      "watch": true
+    },
+    {
       "title": "Explore or exploit?",
       "topic": "ML Fundamentals",
       "description": "The core dilemma of <strong>reinforcement learning</strong>. Your favourite restaurant, or something new tonight? That's the <strong>multi-armed bandit</strong> problem. Watch three diners find out who ends up happiest, and how AI agents learn the same way.",
       "date": "2026-11-25",
       "url": "https://www.linkedin.com/posts/hamid-ahmadiasl_reinforcementlearning-multiarmedbandit-machinelearning-ugcPost-7531339836079800320-XX9L/",
       "file": "",
-      "video": "assets/insights/bandit.mp4",
-      "poster": "assets/insights/bandit-poster.jpg",
-      "videoWidth": 720,
-      "videoHeight": 900
+      "watch": true
     },
     {
       "title": "Self-Organizing Maps (SOMs)",
